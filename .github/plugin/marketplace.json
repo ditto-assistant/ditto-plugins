@@ -1,0 +1,16 @@
+{
+  "name": "ditto-plugins",
+  "owner": {
+    "name": "Omni Aura LLC",
+    "email": "support@heyditto.ai"
+  },
+  "metadata": {
+    "description": "Ditto's official plugins for GitHub Copilot and VS Code: shared skills backed by the hosted Ditto MCP server."
+  },
+  "plugins": [
+    {
+      "name": "ditto",
+      "source": "./plugins/ditto"
+    }
+  ]
+}

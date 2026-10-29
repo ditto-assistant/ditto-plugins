@@ -1,0 +1,17 @@
+{
+  "name": "ditto-plugins",
+  "owner": {
+    "name": "Omni Aura LLC",
+    "email": "support@heyditto.ai"
+  },
+  "metadata": {
+    "description": "Ditto's official Cursor plugins: shared skills backed by the hosted Ditto MCP server."
+  },
+  "plugins": [
+    {
+      "name": "ditto",
+      "source": "./plugins/ditto",
+      "description": "Ditto memory in Cursor: recall and save authorized context through hosted MCP, curate music, and hand off chats."
+    }
+  ]
+}

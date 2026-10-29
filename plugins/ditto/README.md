@@ -1,21 +1,25 @@
-# Ditto for Claude
+# Ditto
 
-Connect Claude to your Ditto memory through the hosted MCP server at
-https://api.heyditto.ai/mcp. Sign in through Claude's connection controls; never
-paste API keys into chat. The package includes no CLI helper or lifecycle hooks.
+Connect your AI host to your Ditto memory through the hosted MCP server at
+https://api.heyditto.ai/mcp. Sign in through the host's own connection controls;
+never paste API keys into chat. The package includes no CLI helper or lifecycle hooks.
 
-In Claude desktop, select Chat and Cowork, then open Customize → Plugins → Add →
-Add marketplace → Add from a repository. Select
-`ditto-assistant/ditto-claude-plugins`, Sync, and add Ditto. Verify the plugin is
-enabled and its Ditto connector is Connected. Chat/Cowork and Code have separate
-plugin installations.
+This one folder is a native plugin for each supported host:
 
-In Claude Code, install from the official Ditto marketplace:
+| Host | Manifest | MCP config | Install |
+| --- | --- | --- | --- |
+| Claude Code, Chat, Cowork | `.claude-plugin/plugin.json` | `.mcp.json` | `/plugin marketplace add ditto-assistant/ditto-plugins`, `/plugin install ditto@ditto-claude-plugins` |
+| Cursor | `.cursor-plugin/plugin.json` | `.mcp.json` | Customize → Marketplace → Ditto |
+| Grok Build | `.grok-plugin/plugin.json` | `.mcp.json` | `grok plugin install ditto --trust` after `grok plugin marketplace add ditto-assistant/ditto-plugins` |
+| Codex | `.codex-plugin/plugin.json` | `mcp.json` | `codex plugin marketplace add ditto-assistant/ditto-plugins`, then `/plugins` |
+| GitHub Copilot, VS Code | `.github/plugin/plugin.json` | inline | `copilot plugin install ditto@ditto-plugins` |
+| Antigravity | `.antigravity-plugin/plugin.json` | `mcp_config.json` | `/plugin install ./plugins/ditto` from a clone |
+| Kimi Code | `.kimi-plugin/plugin.json` | inline | local install from a clone |
 
-```text
-/plugin marketplace add ditto-assistant/ditto-claude-plugins
-/plugin install ditto@ditto-claude-plugins
-```
+Claude desktop Chat/Cowork and Claude Code have separate plugin installations; in
+Chat and Cowork, add the `ditto-assistant/ditto-plugins` repository under
+Customize → Plugins → Add marketplace. See the [repository README](../../README.md)
+for each host's full steps.
 
 Use `/ditto-memory` to search memories, fetch supporting content, and save or
 update useful information when authorized. Live MCP schemas determine available
@@ -36,7 +40,7 @@ continuation notes and supported host archival, including explicitly selected
 bulk closeout. Disk assessment requires local tools; cleanup requires exact
 authority and verified code/file recovery. A memory summary is not a file backup.
 If this host cannot archive, the skill saves the handoff and explains the manual
-closeout step. Exiting Claude Code is not an archive operation.
+closeout step. Exiting a CLI session is not an archive operation.
 
 The plugin respects your current instructions, private capture preferences,
 source authorship and actual tool grants. The plugin does not automatically save
