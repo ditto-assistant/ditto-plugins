@@ -115,8 +115,10 @@ def plugin_registry(source):
 def catalog_names(source, catalog="memory"):
     """Select an explicit surface; old source snapshots retain their catalog."""
     config = file_at(source, "scripts/catalogs.json")
-    if not config.exists() and catalog == "memory":
-        return None
+    if not config.exists():
+        if catalog == "memory":
+            return None
+        raise ValueError("Unknown or invalid skill catalog")
     catalogs = json.loads(config.read_text())
     names = catalogs.get(catalog) if isinstance(catalogs, dict) else None
     if not isinstance(names, list) or not names or any(not isinstance(name, str) for name in names) or len(set(names)) != len(names):
@@ -164,7 +166,8 @@ def bump_manifests(repo, host, plugin):
     if not files[0].exists():
         raise ValueError("Missing primary host manifest")
     present = [(f, json.loads(f.read_text())) for f in files if f.exists()]
-    present = [(f, m) for f, m in present if "version" in m]
+    if any("version" not in m for _, m in present):
+        raise ValueError("Every host manifest in one plugin must carry a version before bumping")
     versions = {m["version"] for _, m in present}
     if len(versions) != 1:
         raise ValueError("Host manifests in one plugin must share a version before bumping")
@@ -211,6 +214,12 @@ def build(source, repo, host, bump_version=False, plugin=DEFAULT_PLUGIN, catalog
     output_changed = skill is not None and (not file_at(repo, paths["output"]).exists() or file_at(repo, paths["output"]).read_bytes() != skill)
     if bump_version and (output_changed or skill is None and not old or old.get("files_sha256", {}) != extra_hashes):
         bump_manifests(repo, host, plugin)
+    # A renamed or dropped adapted skill leaves its previous output behind;
+    # old locks without the key used the default adapted skill.
+    if old:
+        stale = layout(plugin, old.get("adapted_skill", DEFAULT_ADAPTED)).get("output")
+        if stale and stale != paths.get("output") and stale not in extra:
+            file_at(repo, stale).unlink(missing_ok=True)
     for relative in old.get("files_sha256", {}):
         if relative not in extra:
             if not relative.startswith(paths["skills"]) or ".." in Path(relative).parts or relative == paths.get("output"):
