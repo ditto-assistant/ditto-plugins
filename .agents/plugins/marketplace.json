@@ -1,0 +1,20 @@
+{
+  "name": "ditto-plugins",
+  "interface": {
+    "displayName": "Ditto"
+  },
+  "plugins": [
+    {
+      "name": "ditto",
+      "source": {
+        "source": "local",
+        "path": "./plugins/ditto"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

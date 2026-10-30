@@ -1,0 +1,26 @@
+{
+  "name": "ditto-plugins",
+  "description": "Ditto's official Grok plugins: shared skills backed by the hosted Ditto MCP server.",
+  "owner": {
+    "name": "Omni Aura LLC",
+    "email": "support@heyditto.ai"
+  },
+  "plugins": [
+    {
+      "name": "ditto",
+      "source": "./plugins/ditto",
+      "description": "Recall and save Ditto memories through hosted MCP, curate music, and hand off chats with verified continuation notes.",
+      "category": "productivity",
+      "homepage": "https://heyditto.ai",
+      "keywords": [
+        "ditto",
+        "heyditto",
+        "ditto memory",
+        "ditto mcp"
+      ],
+      "domains": [
+        "heyditto.ai"
+      ]
+    }
+  ]
+}

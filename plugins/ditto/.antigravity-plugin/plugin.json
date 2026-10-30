@@ -1,0 +1,31 @@
+{
+  "name": "ditto",
+  "displayName": "Ditto",
+  "version": "0.3.5",
+  "description": "Search and save Ditto memories through hosted MCP, curate music, and hand off chats with verified continuation notes. Archival and owned workspace cleanup depend on host capabilities and authorization. Sign in through Antigravity.",
+  "logo": "assets/icon.png",
+  "suggestedPrompts": [
+    "What do my Ditto memories say about this project?",
+    "Save this decision to Ditto",
+    "Hand off this chat with a Ditto continuation note"
+  ],
+  "keywords": [
+    "ditto",
+    "heyditto",
+    "memory",
+    "recall",
+    "knowledge-graph",
+    "mcp"
+  ],
+  "author": {
+    "name": "Omni Aura LLC",
+    "email": "support@heyditto.ai",
+    "url": "https://heyditto.ai"
+  },
+  "homepage": "https://heyditto.ai",
+  "repository": "https://github.com/ditto-assistant/ditto-plugins",
+  "license": "MIT",
+  "skills": [
+    "./skills"
+  ]
+}

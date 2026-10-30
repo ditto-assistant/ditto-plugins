@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Verify generated content and provenance
-        run: python3 scripts/shared_skills.py verify --host claude --repo .
+        run: python3 scripts/shared_skills.py verify --host plugins --repo .
       - name: Verify MCP-only package boundary
         run: |
           python3 -m unittest discover -s tests -v

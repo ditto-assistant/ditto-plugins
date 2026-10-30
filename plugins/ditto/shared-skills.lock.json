@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "source_repository": "https://github.com/ditto-assistant/ditto-skills",
-  "source_commit": "35106c4bfd72d28d0685632ca0ce9a4c132d365c",
-  "host": "claude",
+  "source_commit": "9a2a3ee2af084fe2833cec7b093cfd371098f867",
+  "host": "plugins",
   "core_sha256": "5912af5483c469ec15db27858122fc9128fc25cd239202c0fdd9727de7dd5f6b",
-  "adapter_sha256": "cbcbf06306758f7635891bc0b6b0169e0aee0ea8764eeded11935fc47c7f5c73",
-  "generator_sha256": "f9482f4790b22608dfa16c279ba183f05dd651b69ed2b474c78068918bd95efc",
-  "skill_sha256": "9c219625022999938ede690faa3178b13c4af5235d2212e90306d70c3fd3494e",
+  "adapter_sha256": "7cd895ab3feb0581e7e782de46b8b8220e4281a9ebfe6f6b651753e3a545bac1",
+  "generator_sha256": "6d23fa054bfa19203783fd7bdf6a6949915a5e62b6c71349af7031d5caae1500",
+  "skill_sha256": "dc4a46fc6de30ceac400ced65b122895738757cdcdaf1be529d63bec165e5835",
   "files_sha256": {
     "plugins/ditto/skills/curate-music/SKILL.md": "b498f8639aeb64e59f88830ac162a894f9f128b7e1f2db6a7c528092904c1eb4",
     "plugins/ditto/skills/curate-music/references/youtube-music.md": "e763797cc7821114682c7b92cec6919e6f957792cdc54756f670c7086b09e52c",

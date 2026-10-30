@@ -10,14 +10,16 @@ validation reads the exact submitted commit separately from local validation.
 The release contains hosted MCP connection metadata and shared skills. It does
 not distribute or refresh a CLI, run hooks or provision agent accounts.
 
-1. Change host metadata, `.mcp.json` or the Claude adapter here. Change common skills
+1. Change host manifests, MCP configuration or the host adapter here. Change common skills
    in `ditto-assistant/ditto-skills`; regenerate using its clean committed source.
-2. Bump `plugins/ditto/.claude-plugin/plugin.json` for a host change. The shared-skill
+2. Bump every host manifest in `plugins/<name>/` to the same version for a host change
+   (the validator rejects diverged versions). The shared-skill
    generator automatically patch-bumps changed skill content; avoid a second bump.
 3. Run the offline verifier, `python3 -m unittest discover -s tests -v`,
-   `python3 scripts/validate_package.py`, and `claude plugin validate ./plugins/ditto`.
+   `python3 scripts/validate_package.py`, `claude plugin validate ./plugins/ditto`, and
+   `grok plugin validate ./plugins/ditto` where those CLIs are available.
 4. Open a PR and inspect current-head CI and Ditto Review. Merge only when authorized.
-   The marketplace tracks main, so merging updates the available plugin package.
+   Every host marketplace tracks main, so merging updates the plugin on all hosts.
 5. Refresh the marketplace and update Ditto in the actual host. Verify the installed
    version, two skills and Ditto MCP connector. Authenticate through the host flow
    and verify tools separately before claiming live memory behavior.
