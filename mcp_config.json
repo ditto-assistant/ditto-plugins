@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "ditto": {
+      "serverUrl": "https://api.heyditto.ai/mcp"
+    }
+  }
+}
