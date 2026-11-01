@@ -29,6 +29,13 @@ MANIFESTS = {
     "kimi": ".kimi-plugin/plugin.json",
 }
 MCP_FILES = {".mcp.json": "type", "mcp.json": "type", "mcp_config.json": None}
+# Antigravity loads a manifest that declares the portable Agent Plugins schema as
+# an Agent Plugins package: it then treats .mcp.json and mcp.json as other hosts'
+# files instead of warning that they are "never loaded", which keeps
+# `agy plugin validate --strict` clean. Its native mode still reads
+# mcp_config.json; with enable-agent-plugins-spec on it reads mcp.json.
+AGENT_PLUGINS_SCHEMA = "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
+AGENT_PLUGINS_MCP_SCHEMA = "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json"
 # Each plugin's only permitted MCP endpoint. Add an entry when adding a plugin.
 HOSTED_MCP = {"ditto": "https://api.heyditto.ai/mcp"}
 RUNTIME = {"hooks", "commands", "agents", "userConfig", "settings", "lspServers", "apps"}
@@ -68,6 +75,8 @@ def check_mcp_file(path, plugin):
     data = load(path)
     if set(data) - {"$schema", "mcpServers"} or not isinstance(data.get("mcpServers"), dict) or len(data["mcpServers"]) != 1:
         raise ValueError("Expected hosted Ditto MCP without launcher, headers or credentials")
+    if Path(path).name == "mcp.json" and data.get("$schema") != AGENT_PLUGINS_MCP_SCHEMA:
+        raise ValueError("mcp.json is the portable Agent Plugins MCP file (Codex, Antigravity) and must declare its $schema")
     for name, server in data["mcpServers"].items():
         check_server(name, server, plugin)
 
@@ -80,6 +89,11 @@ def check_manifest(host, manifest, plugin, folder):
     mcp = manifest.get("mcpServers")
     if host == "claude" and mcp is not None:
         raise ValueError("Unexpected runtime component in MCP-only claude manifest")  # Claude loads .mcp.json itself
+    if host == "antigravity":
+        if manifest.get("$schema") != AGENT_PLUGINS_SCHEMA:
+            raise ValueError("antigravity manifest must declare the Agent Plugins $schema (agy --strict warns on other hosts' MCP files otherwise)")
+        if "skills" in manifest:
+            raise ValueError("antigravity manifest must not set skills: agy ignores it in Agent Plugins mode and --strict fails; skills/ loads either way")
     if isinstance(mcp, str):
         if mcp not in {"./.mcp.json", "./mcp.json"} or not (folder / mcp).is_file():
             raise ValueError(f"{host} manifest must point at the bundled MCP file")

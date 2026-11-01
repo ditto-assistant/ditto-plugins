@@ -17,7 +17,8 @@ not distribute or refresh a CLI, run hooks or provision agent accounts.
    generator automatically patch-bumps changed skill content; avoid a second bump.
 3. Run the offline verifier, `python3 -m unittest discover -s tests -v`,
    `python3 scripts/validate_package.py`, `claude plugin validate ./plugins/ditto`, and
-   `grok plugin validate ./plugins/ditto` where those CLIs are available.
+   `grok plugin validate ./plugins/ditto` and `agy plugin validate --strict ./plugins/ditto`
+   where those CLIs are available.
 4. Open a PR and inspect current-head CI and Ditto Review. Merge only when authorized.
    Every host marketplace tracks main, so merging updates the plugin on all hosts.
 5. Refresh the marketplace and update Ditto in the actual host. Verify the installed

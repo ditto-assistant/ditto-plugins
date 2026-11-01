@@ -61,6 +61,23 @@ class MCPReleaseTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "Expected hosted Ditto MCP"):
                     package.validate(self.root)
 
+    def test_antigravity_manifest_loads_as_agent_plugins_package(self):
+        # Without the portable $schema, agy warns that .mcp.json and mcp.json are
+        # never loaded and `agy plugin validate --strict` fails (DITTO-1800).
+        relative = "plugins/ditto/.antigravity-plugin/plugin.json"
+        for change, message in ((lambda d: d.pop("$schema"), "Agent Plugins \\$schema"),
+                                (lambda d: d.__setitem__("skills", ["./skills"]), "must not set skills")):
+            with self.subTest(message=message):
+                self.setUp()
+                self.edit(relative, change)
+                with self.assertRaisesRegex(ValueError, message):
+                    package.validate(self.root)
+
+    def test_portable_mcp_file_declares_its_schema(self):
+        self.edit("plugins/ditto/mcp.json", lambda d: d.pop("$schema"))
+        with self.assertRaisesRegex(ValueError, "portable Agent Plugins MCP file"):
+            package.validate(self.root)
+
     def test_other_endpoint_is_rejected(self):
         f = self.root / "plugins/ditto/.mcp.json"
         f.write_text(f.read_text().replace("api.heyditto.ai", "example.com"))

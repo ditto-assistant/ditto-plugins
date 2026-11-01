@@ -105,10 +105,12 @@ Antigravity installs straight from GitHub:
 agy plugin install https://github.com/ditto-assistant/ditto-plugins
 ```
 
-or from a clone with `/plugin install ./plugins/ditto`. Antigravity reads
-`mcp_config.json`. `agy plugin validate` warns that `.mcp.json` and `mcp.json`
-are never loaded; that is expected, because those files serve the other hosts,
-and it is why `--strict` fails here.
+or from a clone with `/plugin install ./plugins/ditto`. The Antigravity manifest
+declares the portable [Agent Plugins](https://agent-plugins.org) schema, so
+Antigravity treats `.mcp.json` as another host's file and
+`agy plugin validate --strict ./plugins/ditto` passes. Antigravity reads the server
+from `mcp_config.json` today, and from the portable `mcp.json` once its
+`enable-agent-plugins-spec` flag is on; both name the same Ditto endpoint.
 
 Kimi Code installs only from a local clone of `plugins/ditto`. Installing from the
 GitHub URL looks for a manifest at the repository root, which a multi-plugin
@@ -149,8 +151,8 @@ plugins/<name>/
   .codex-plugin/plugin.json   .github/plugin/plugin.json  .antigravity-plugin/plugin.json
   .kimi-plugin/plugin.json
   .mcp.json        # Claude, Cursor, Grok (type http)
-  mcp.json         # Codex (streamable-http)
-  mcp_config.json  # Antigravity (serverUrl)
+  mcp.json         # Codex; Antigravity in Agent Plugins mode (portable, streamable-http)
+  mcp_config.json  # Antigravity native mode (serverUrl)
   assets/          # icon.png, logo.svg
   skills/          # generated shared skills
   shared-skills.lock.json
@@ -166,6 +168,7 @@ python3 -m unittest discover -s tests -v
 python3 scripts/validate_package.py
 claude plugin validate ./plugins/ditto
 grok plugin validate ./plugins/ditto
+agy plugin validate --strict ./plugins/ditto
 ```
 
 Source, package validation, installed plugin, authenticated MCP and actual tool
