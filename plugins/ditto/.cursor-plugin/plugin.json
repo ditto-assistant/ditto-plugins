@@ -2,7 +2,7 @@
   "name": "ditto",
   "displayName": "Ditto",
   "description": "Search and save Ditto memories through hosted MCP, curate music, and hand off chats with verified continuation notes. Archival and owned workspace cleanup depend on host capabilities and authorization. Sign in through Cursor.",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "author": {
     "name": "Omni Aura LLC",
     "email": "support@heyditto.ai"

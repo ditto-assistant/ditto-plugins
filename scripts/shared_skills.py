@@ -6,8 +6,8 @@ Each plugin receives one skill catalog. A plugin may declare one adapted skill
 whose generated SKILL.md is the canonical core plus that distribution's
 host-connection adapter. The ``plugins`` host is the multi-host monorepo
 (ditto-assistant/ditto-plugins): one shared skills folder per plugin serves
-Claude, Cursor, Grok, Codex, Copilot, Antigravity and Kimi manifests, so every
-versioned manifest in the plugin directory is bumped together.
+Claude, Cursor, Grok, Codex, Copilot, Antigravity, Kimi and Gemini CLI manifests,
+so every versioned manifest in the plugin directory is bumped together.
 """
 import argparse
 import hashlib
@@ -40,6 +40,7 @@ PLUGIN_MANIFESTS = {
         ".github/plugin/plugin.json",
         ".antigravity-plugin/plugin.json",
         ".kimi-plugin/plugin.json",
+        "gemini-extension.json",
     ],
 }
 MANIFESTS = {host: f"plugins/{DEFAULT_PLUGIN}/{paths[0]}" for host, paths in PLUGIN_MANIFESTS.items()}

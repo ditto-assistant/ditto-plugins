@@ -113,6 +113,36 @@ class MCPReleaseTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Linked release input"):
             package.validate(self.root)
 
+    def test_gemini_extension_is_mcp_only_streamable_http(self):
+        relative = "plugins/ditto/gemini-extension.json"
+        cases = (
+            (lambda d: d["mcpServers"].__setitem__("ditto", {"url": "https://api.heyditto.ai/mcp"}), "httpUrl"),
+            (lambda d: d["mcpServers"]["ditto"].__setitem__("headers", {"Authorization": "Bearer x"}), "httpUrl"),
+            (lambda d: d.__setitem__("excludeTools", ["run_shell_command"]), "may only set"),
+            (lambda d: d.__setitem__("contextFileName", "GEMINI.md"), "may only set"),
+            (lambda d: d["mcpServers"]["ditto"].__setitem__("httpUrl", "https://example.com/mcp"), "Expected hosted Ditto MCP"),
+        )
+        for change, message in cases:
+            with self.subTest(message=message):
+                self.setUp()
+                self.edit(relative, change)
+                with self.assertRaisesRegex(ValueError, message):
+                    package.validate(self.root)
+        self.setUp()
+        (self.root / relative).unlink()
+        with self.assertRaisesRegex(ValueError, "Missing gemini manifest"):
+            package.validate(self.root)
+
+    def test_gemini_extension_directories_are_not_release_files(self):
+        for folder in ("commands", "hooks", "policies", "agents"):
+            with self.subTest(folder=folder):
+                self.setUp()
+                extra = self.root / "plugins/ditto" / folder / "x.toml"
+                extra.parent.mkdir()
+                extra.write_text("prompt = 'x'\n")
+                with self.assertRaisesRegex(ValueError, "Unexpected release file"):
+                    package.validate(self.root)
+
     def test_other_endpoint_is_rejected(self):
         f = self.root / "plugins/ditto/.mcp.json"
         f.write_text(f.read_text().replace("api.heyditto.ai", "example.com"))
@@ -140,7 +170,7 @@ class MCPReleaseTests(unittest.TestCase):
             self.edit(f"plugins/ditto-extra/{relative}", lambda d: d.__setitem__("name", "ditto-extra"))
         for relative in ("plugins/ditto-extra/.mcp.json", "plugins/ditto-extra/mcp.json", "plugins/ditto-extra/mcp_config.json"):
             self.edit(relative, lambda d: d.__setitem__("mcpServers", {"ditto-extra": d["mcpServers"]["ditto"]}))
-        for relative in ("plugins/ditto-extra/.github/plugin/plugin.json", "plugins/ditto-extra/.kimi-plugin/plugin.json"):
+        for relative in ("plugins/ditto-extra/.github/plugin/plugin.json", "plugins/ditto-extra/.kimi-plugin/plugin.json", "plugins/ditto-extra/gemini-extension.json"):
             self.edit(relative, lambda d: d.__setitem__("mcpServers", {"ditto-extra": d["mcpServers"]["ditto"]}))
         with patch.dict(package.HOSTED_MCP, {"ditto-extra": "https://api.heyditto.ai/mcp"}):
             with self.assertRaisesRegex(ValueError, "listed in every marketplace"):

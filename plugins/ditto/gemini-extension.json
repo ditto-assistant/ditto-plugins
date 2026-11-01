@@ -1,0 +1,10 @@
+{
+  "name": "ditto",
+  "version": "0.3.8",
+  "description": "Search and save Ditto memories through hosted MCP, curate music, and hand off chats with verified continuation notes. Archival and owned workspace cleanup depend on host capabilities and authorization. Sign in through Gemini CLI.",
+  "mcpServers": {
+    "ditto": {
+      "httpUrl": "https://api.heyditto.ai/mcp"
+    }
+  }
+}
