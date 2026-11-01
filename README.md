@@ -22,12 +22,12 @@ own OAuth flow: no API keys, npm helpers, CLI bootstrap or lifecycle hooks.
 | --- | --- | --- |
 | Claude Code | `.claude-plugin/marketplace.json` | `/plugin marketplace add ditto-assistant/ditto-plugins` then `/plugin install ditto@ditto-claude-plugins` |
 | Claude desktop (Chat, Cowork) | `.claude-plugin/marketplace.json` | Customize → Plugins → Add → Add marketplace → Add from a repository → `ditto-assistant/ditto-plugins` |
-| Cursor | `.cursor-plugin/marketplace.json` | Cursor Marketplace once listed; teams: Dashboard → Plugins & MCPs → Import from Repo |
+| Cursor | `.cursor-plugin/marketplace.json` | Cursor Marketplace once listed; CLI: `agent plugin marketplace add https://github.com/ditto-assistant/ditto-plugins` (signed in); teams: Dashboard → Plugins & MCPs → Import from Repo |
 | Grok Build | `.grok-plugin/marketplace.json` | `grok plugin marketplace add ditto-assistant/ditto-plugins` then `grok plugin install ditto --trust` |
-| Codex | `.agents/plugins/marketplace.json` | `codex plugin marketplace add ditto-assistant/ditto-plugins`, then install Ditto from `/plugins` |
+| Codex | `.agents/plugins/marketplace.json` | `codex plugin marketplace add ditto-assistant/ditto-plugins` then `codex plugin add ditto@ditto-plugins` (or install from `/plugins`) |
 | GitHub Copilot CLI / VS Code | `.github/plugin/marketplace.json` | `copilot plugin marketplace add ditto-assistant/ditto-plugins` then `copilot plugin install ditto@ditto-plugins` |
-| Antigravity | `plugins/ditto/.antigravity-plugin/` | Clone, then `/plugin install ./plugins/ditto` |
-| Kimi Code | `plugins/ditto/.kimi-plugin/` | Install from a local clone of `plugins/ditto` |
+| Antigravity | `plugins/ditto/.antigravity-plugin/` | `agy plugin install https://github.com/ditto-assistant/ditto-plugins`, or `/plugin install ./plugins/ditto` from a clone |
+| Kimi Code | `plugins/ditto/.kimi-plugin/` | Local only: install `plugins/ditto` from a clone (installing from the GitHub URL finds no manifest at the repository root) |
 
 ### Claude
 
@@ -59,7 +59,9 @@ Inspect and authenticate the plugin-provided Ditto server in `/mcp`. To update:
 Open **Customize**, find **Ditto** in the Cursor Marketplace, and install it for
 your user or a project. Teams can import this repository as a team marketplace
 (Dashboard → Plugins & MCPs → Add Marketplace → Import from Repo) and turn on
-Auto Refresh. To test locally, copy `plugins/ditto` to
+Auto Refresh. From the Cursor CLI, sign in to Cursor first and pass the full URL
+(`agent plugin marketplace add https://github.com/ditto-assistant/ditto-plugins`);
+the `owner/repo` shorthand is rejected. To test locally, copy `plugins/ditto` to
 `~/.cursor/plugins/local/ditto` and run **Developer: Reload Window**. Sign in to
 Ditto under Customize → MCP servers. Skills load under Agent Decides and can be
 invoked with `/ditto-memory`, `/handoff` or `/curate-music`.
@@ -79,9 +81,10 @@ server; check Ditto in `/mcps` and sign in when prompted. Skills appear as
 
 ```sh
 codex plugin marketplace add ditto-assistant/ditto-plugins
+codex plugin add ditto@ditto-plugins
 ```
 
-Install Ditto from `/plugins`, then complete the sign-in prompt. `/mcp` shows the
+Or install Ditto from `/plugins`. Then complete the sign-in prompt. `/mcp` shows the
 connection. The ChatGPT directory listing is published separately.
 
 ### GitHub Copilot and VS Code
@@ -96,9 +99,20 @@ sign in to the Ditto server from the MCP servers view.
 
 ### Antigravity and Kimi Code
 
-Clone this repository and install `plugins/ditto` as a local plugin
-(`/plugin install ./plugins/ditto` in Antigravity). Antigravity reads
-`mcp_config.json`; Kimi reads the server from `.kimi-plugin/plugin.json`.
+Antigravity installs straight from GitHub:
+
+```sh
+agy plugin install https://github.com/ditto-assistant/ditto-plugins
+```
+
+or from a clone with `/plugin install ./plugins/ditto`. Antigravity reads
+`mcp_config.json`. `agy plugin validate` warns that `.mcp.json` and `mcp.json`
+are never loaded; that is expected, because those files serve the other hosts,
+and it is why `--strict` fails here.
+
+Kimi Code installs only from a local clone of `plugins/ditto`. Installing from the
+GitHub URL looks for a manifest at the repository root, which a multi-plugin
+repository does not have. Kimi reads the server from `.kimi-plugin/plugin.json`.
 
 The bundled skills are the verified loading path. The hosted MCP server also
 offers the canonical skill files through `skills/list`, `skills/get` and
