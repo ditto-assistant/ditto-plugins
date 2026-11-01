@@ -95,6 +95,14 @@ class MCPReleaseTests(unittest.TestCase):
         (self.root / ".kimi-plugin/plugin.json").unlink()
         with self.assertRaisesRegex(ValueError, "Missing root kimi manifest"):
             package.validate(self.root)
+        self.setUp()
+        linked = self.root / ".kimi-plugin/plugin.json"
+        target = self.root / "kimi-root.json"
+        target.write_text(linked.read_text())
+        linked.unlink()
+        linked.symlink_to(target)
+        with self.assertRaisesRegex(ValueError, "Linked release input"):
+            package.validate(self.root)
 
     def test_other_endpoint_is_rejected(self):
         f = self.root / "plugins/ditto/.mcp.json"
