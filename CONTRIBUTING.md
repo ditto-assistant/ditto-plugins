@@ -24,6 +24,9 @@ host. Every root marketplace lists the same plugins, and
      out its `skills` field; `agy plugin validate --strict` needs both.
    - rename the MCP server key to `<name>` in `.mcp.json`, `mcp.json`,
      `mcp_config.json` and the inline Copilot and Kimi entries.
+   - Kimi Code installs a GitHub URL only from the repository root, and the root
+     `.kimi-plugin/plugin.json` serves the `ditto` plugin. Other plugins install in
+     Kimi from a clone of `plugins/<name>`.
 3. **Allow its endpoint.** Add `<name>: <https MCP URL>` to `HOSTED_MCP` in
    `scripts/validate_package.py`. Only hosted HTTP servers are allowed: no
    commands, headers, env or credentials.

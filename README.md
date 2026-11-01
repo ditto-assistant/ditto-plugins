@@ -27,7 +27,7 @@ own OAuth flow: no API keys, npm helpers, CLI bootstrap or lifecycle hooks.
 | Codex | `.agents/plugins/marketplace.json` | `codex plugin marketplace add ditto-assistant/ditto-plugins` then `codex plugin add ditto@ditto-plugins` (or install from `/plugins`) |
 | GitHub Copilot CLI / VS Code | `.github/plugin/marketplace.json` | `copilot plugin marketplace add ditto-assistant/ditto-plugins` then `copilot plugin install ditto@ditto-plugins` |
 | Antigravity | `plugins/ditto/.antigravity-plugin/` | `agy plugin install https://github.com/ditto-assistant/ditto-plugins`, or `/plugin install ./plugins/ditto` from a clone |
-| Kimi Code | `plugins/ditto/.kimi-plugin/` | Local only: install `plugins/ditto` from a clone (installing from the GitHub URL finds no manifest at the repository root) |
+| Kimi Code | `.kimi-plugin/plugin.json` (root, points into `plugins/ditto`) | `/plugins install https://github.com/ditto-assistant/ditto-plugins` in Kimi Code, or install `plugins/ditto` from a clone |
 
 ### Claude
 
@@ -112,9 +112,20 @@ Antigravity treats `.mcp.json` as another host's file and
 from `mcp_config.json` today, and from the portable `mcp.json` once its
 `enable-agent-plugins-spec` flag is on; both name the same Ditto endpoint.
 
-Kimi Code installs only from a local clone of `plugins/ditto`. Installing from the
-GitHub URL looks for a manifest at the repository root, which a multi-plugin
-repository does not have. Kimi reads the server from `.kimi-plugin/plugin.json`.
+Kimi Code installs straight from GitHub. In a Kimi Code session:
+
+```text
+/plugins install https://github.com/ditto-assistant/ditto-plugins
+```
+
+Choose **Trust and install**, then `/reload`. `/plugins list` shows Ditto with three
+skills and one MCP server, and `/mcp` lists `plugin-ditto:ditto` as needing auth; sign
+in with `/mcp-config login plugin-ditto:ditto`. Kimi reads a GitHub URL only from the
+repository root, so the root `.kimi-plugin/plugin.json` points its `skills` at
+`./plugins/ditto/skills`; it is the plugin's own Kimi manifest with that one path
+rebased, and the validator keeps the two identical. To pin a branch or tag, use
+`https://github.com/ditto-assistant/ditto-plugins/tree/<ref>`. From a clone, install
+`./plugins/ditto` instead.
 
 The bundled skills are the verified loading path. The hosted MCP server also
 offers the canonical skill files through `skills/list`, `skills/get` and
@@ -145,6 +156,7 @@ the host-labelled sections of [`adapters/ditto-memory.md`](adapters/ditto-memory
 .grok-plugin/marketplace.json          # Grok Build
 .agents/plugins/marketplace.json       # Codex
 .github/plugin/marketplace.json        # GitHub Copilot / VS Code
+.kimi-plugin/plugin.json               # Kimi Code GitHub installs (ditto, skills rebased into plugins/ditto)
 adapters/ditto-memory.md               # per-host connection guidance (source for the generated skill)
 plugins/<name>/
   .claude-plugin/plugin.json  .cursor-plugin/plugin.json  .grok-plugin/plugin.json

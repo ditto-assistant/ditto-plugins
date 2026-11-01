@@ -17,7 +17,7 @@ class MCPReleaseTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
-        for folder in ("plugins", ".claude-plugin", ".cursor-plugin", ".grok-plugin", ".agents", ".github/plugin"):
+        for folder in ("plugins", ".claude-plugin", ".cursor-plugin", ".grok-plugin", ".agents", ".github/plugin", ".kimi-plugin"):
             shutil.copytree(ROOT / folder, self.root / folder)
 
     def edit(self, relative, change):
@@ -76,6 +76,24 @@ class MCPReleaseTests(unittest.TestCase):
     def test_portable_mcp_file_declares_its_schema(self):
         self.edit("plugins/ditto/mcp.json", lambda d: d.pop("$schema"))
         with self.assertRaisesRegex(ValueError, "portable Agent Plugins MCP file"):
+            package.validate(self.root)
+
+    def test_root_kimi_manifest_points_into_the_plugin(self):
+        # Kimi Code installs a GitHub URL from the repository root only (DITTO-1799).
+        cases = (
+            (lambda d: d.__setitem__("skills", ["./skills"]), "skills ./plugins/ditto/skills"),
+            (lambda d: d.__setitem__("version", "9.9.9"), "must equal"),
+            (lambda d: d["mcpServers"]["ditto"].__setitem__("url", "https://example.com/mcp"), "must equal"),
+        )
+        for change, message in cases:
+            with self.subTest(message=message):
+                self.setUp()
+                self.edit(".kimi-plugin/plugin.json", change)
+                with self.assertRaisesRegex(ValueError, message):
+                    package.validate(self.root)
+        self.setUp()
+        (self.root / ".kimi-plugin/plugin.json").unlink()
+        with self.assertRaisesRegex(ValueError, "Missing root kimi manifest"):
             package.validate(self.root)
 
     def test_other_endpoint_is_rejected(self):

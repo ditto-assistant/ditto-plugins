@@ -43,6 +43,11 @@ PLUGIN_MANIFESTS = {
     ],
 }
 MANIFESTS = {host: f"plugins/{DEFAULT_PLUGIN}/{paths[0]}" for host, paths in PLUGIN_MANIFESTS.items()}
+# Repository-root host manifests that point into one plugin, for hosts that only
+# install from a repository root (Kimi Code reads <repo>/.kimi-plugin/plugin.json
+# when given a GitHub URL). A plugin opts in with "root_manifests" in plugins.json;
+# they are versioned and bumped with that plugin's own manifests.
+ROOT_MANIFESTS = {"plugins": {".kimi-plugin/plugin.json"}}
 
 
 def digest(value):
@@ -109,6 +114,13 @@ def plugin_registry(source):
         names = catalog_names(source, entry["catalog"])
         if adapted is not None and names is not None and adapted not in names:
             raise ValueError("Adapted skill must belong to the plugin catalog")
+        roots = entry.get("root_manifests", [])
+        allowed = set().union(*ROOT_MANIFESTS.values())
+        if not isinstance(roots, list) or any(r not in allowed for r in roots) or len(set(roots)) != len(roots):
+            raise ValueError("Invalid plugin registry: root_manifests must list known repository-root host manifests")
+    claimed = [r for entry in data.values() for r in entry.get("root_manifests", [])]
+    if len(set(claimed)) != len(claimed):
+        raise ValueError("Invalid plugin registry: a root manifest can point into only one plugin")
     return data
 
 
@@ -161,11 +173,19 @@ def additional_files(source, plugin=DEFAULT_PLUGIN, catalog="memory", adapted=DE
     return result
 
 
-def bump_manifests(repo, host, plugin):
-    files = [file_at(repo, f"plugins/{plugin}/{rel}") for rel in PLUGIN_MANIFESTS[host]]
-    if not files[0].exists():
+def host_manifests(repo, host, plugin, root_manifests=()):
+    """Repository-relative versioned manifests of one plugin that exist in repo."""
+    if any(r not in ROOT_MANIFESTS.get(host, set()) for r in root_manifests):
+        raise ValueError("Root manifests are not supported for this host")
+    paths = [f"plugins/{plugin}/{rel}" for rel in PLUGIN_MANIFESTS[host]] + list(root_manifests)
+    return [p for p in paths if file_at(repo, p).exists()]
+
+
+def bump_manifests(repo, host, plugin, root_manifests=()):
+    if not file_at(repo, f"plugins/{plugin}/{PLUGIN_MANIFESTS[host][0]}").exists():
         raise ValueError("Missing primary host manifest")
-    present = [(f, json.loads(f.read_text())) for f in files if f.exists()]
+    files = [file_at(repo, p) for p in host_manifests(repo, host, plugin, root_manifests)]
+    present = [(f, json.loads(f.read_text())) for f in files]
     if any("version" not in m for _, m in present):
         raise ValueError("Every host manifest in one plugin must carry a version before bumping")
     versions = {m["version"] for _, m in present}
@@ -181,7 +201,7 @@ def bump_manifests(repo, host, plugin):
     return [f.relative_to(Path(repo).resolve()).as_posix() for f, _ in present]
 
 
-def build(source, repo, host, bump_version=False, plugin=DEFAULT_PLUGIN, catalog="memory", adapted=DEFAULT_ADAPTED):
+def build(source, repo, host, bump_version=False, plugin=DEFAULT_PLUGIN, catalog="memory", adapted=DEFAULT_ADAPTED, root_manifests=()):
     paths = layout(plugin, adapted)
     sha = source_identity(source)
     generator = file_at(source, GENERATOR).read_bytes()
@@ -213,7 +233,7 @@ def build(source, repo, host, bump_version=False, plugin=DEFAULT_PLUGIN, catalog
         return False
     output_changed = skill is not None and (not file_at(repo, paths["output"]).exists() or file_at(repo, paths["output"]).read_bytes() != skill)
     if bump_version and (output_changed or skill is None and not old or old.get("files_sha256", {}) != extra_hashes):
-        bump_manifests(repo, host, plugin)
+        bump_manifests(repo, host, plugin, root_manifests)
     # A renamed or dropped adapted skill leaves its previous output behind;
     # old locks without the key used the default adapted skill.
     if old:
@@ -241,7 +261,8 @@ def build_all(source, repo, host, bump_version=False):
             continue  # single-host repositories carry only the original plugin
         if not file_at(repo, f"plugins/{plugin}/{PLUGIN_MANIFESTS[host][0]}").exists():
             raise ValueError(f"Distribution lacks the {plugin} plugin manifest; scaffold it before generating")
-        changed[plugin] = build(source, repo, host, bump_version, plugin, entry["catalog"], entry.get("adapted_skill"))
+        roots = entry.get("root_manifests", []) if host == "plugins" else []
+        changed[plugin] = build(source, repo, host, bump_version, plugin, entry["catalog"], entry.get("adapted_skill"), roots)
     return changed
 
 
