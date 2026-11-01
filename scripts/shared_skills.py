@@ -116,7 +116,7 @@ def plugin_registry(source):
             raise ValueError("Adapted skill must belong to the plugin catalog")
         roots = entry.get("root_manifests", [])
         allowed = set().union(*ROOT_MANIFESTS.values())
-        if not isinstance(roots, list) or any(r not in allowed for r in roots) or len(set(roots)) != len(roots):
+        if not isinstance(roots, list) or any(not isinstance(r, str) or r not in allowed for r in roots) or len(set(roots)) != len(roots):
             raise ValueError("Invalid plugin registry: root_manifests must list known repository-root host manifests")
     claimed = [r for entry in data.values() for r in entry.get("root_manifests", [])]
     if len(set(claimed)) != len(claimed):
@@ -256,7 +256,14 @@ def build(source, repo, host, bump_version=False, plugin=DEFAULT_PLUGIN, catalog
 def build_all(source, repo, host, bump_version=False):
     """Build every plugin in the source registry that the distribution hosts."""
     changed = {}
-    for plugin, entry in plugin_registry(source).items():
+    registry = plugin_registry(source)
+    if host == "plugins":
+        # A root manifest no plugin claims would silently keep its old version.
+        claimed = {r for entry in registry.values() for r in entry.get("root_manifests", [])}
+        for root in sorted(ROOT_MANIFESTS[host] - claimed):
+            if file_at(repo, root).exists():
+                raise ValueError(f"{root} exists but no plugin in scripts/plugins.json lists it under root_manifests")
+    for plugin, entry in registry.items():
         if host != "plugins" and plugin != DEFAULT_PLUGIN:
             continue  # single-host repositories carry only the original plugin
         if not file_at(repo, f"plugins/{plugin}/{PLUGIN_MANIFESTS[host][0]}").exists():
