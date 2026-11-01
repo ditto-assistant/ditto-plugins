@@ -139,9 +139,9 @@ at the top, skills in `skills/`) and has no subdirectory option. A root manifest
 would also make Antigravity install the whole repository as a Gemini extension, so
 `.github/workflows/gemini-extension.yml` publishes `plugins/ditto` unchanged as the root
 of the `gemini-extension` branch after each change on `main`. Gemini first looks for a
-GitHub release with that tag; when asked whether to "attempt to install via git clone
-instead", answer yes. `gemini extensions list` then shows the three skills and the
-`ditto` MCP server. Sign in with `/mcp auth ditto` in a Gemini CLI session; `gemini mcp
+GitHub release with that tag, finds none, and asks whether to "attempt to install via
+git clone instead": answer yes. `gemini extensions list` then shows the three skills
+and the `ditto` MCP server. Sign in with `/mcp auth ditto` in a Gemini CLI session; `gemini mcp
 list` reports the server as Disconnected until then. From a clone, run
 `gemini extensions install ./plugins/ditto` or `gemini extensions link ./plugins/ditto`.
 `gemini extensions update ditto` follows the branch.
