@@ -28,6 +28,9 @@ MANIFESTS = {
     "antigravity": ".antigravity-plugin/plugin.json",
     "kimi": ".kimi-plugin/plugin.json",
 }
+# Hosts that install a GitHub URL only from the repository root get a root
+# manifest that points into one plugin. Kimi Code reads <repo>/.kimi-plugin/plugin.json.
+ROOT_MANIFESTS = {".kimi-plugin/plugin.json": ("kimi", "ditto")}
 MCP_FILES = {".mcp.json": "type", "mcp.json": "type", "mcp_config.json": None}
 # Antigravity loads a manifest that declares the portable Agent Plugins schema as
 # an Agent Plugins package: it then treats .mcp.json and mcp.json as other hosts'
@@ -114,6 +117,21 @@ def check_manifest(host, manifest, plugin, folder):
             raise ValueError(f"{host} manifest must use the shared skills folder")
 
 
+def check_root_manifest(root, relative, host, plugin):
+    """A root manifest is the plugin's own host manifest with paths rebased into plugins/<name>."""
+    path = root / relative
+    parts = Path(relative).parts
+    if any((root / Path(*parts[:i])).is_symlink() for i in range(1, len(parts) + 1)):
+        raise ValueError("Linked release input")
+    if not path.is_file():
+        raise ValueError(f"Missing root {host} manifest {relative}")
+    manifest = load(path)
+    expected = load(root / "plugins" / plugin / MANIFESTS[host])
+    expected["skills"] = [f"./plugins/{plugin}/skills"]
+    if manifest != expected:
+        raise ValueError(f"Root {relative} must equal plugins/{plugin}/{MANIFESTS[host]} with skills ./plugins/{plugin}/skills")
+
+
 def validate(root):
     root = Path(root)
     lists = {}
@@ -167,6 +185,8 @@ def validate(root):
                 raise ValueError(f"Unexpected release file: {relative}")
         if not any((folder / "skills").glob("*/SKILL.md")):
             raise ValueError(f"{plugin} ships no skills")
+    for relative, (host, plugin) in ROOT_MANIFESTS.items():
+        check_root_manifest(root, relative, host, plugin)
     for name in ("ditto-memory", "curate-music", "handoff"):
         if not (root / "plugins/ditto/skills" / name / "SKILL.md").is_file():
             raise ValueError(f"Missing skill: {name}")

@@ -2,7 +2,7 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "ditto",
   "displayName": "Ditto",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "Search and save Ditto memories through hosted MCP, curate music, and hand off chats with verified continuation notes. Archival and owned workspace cleanup depend on host capabilities and authorization. Sign in through Antigravity.",
   "logo": "assets/icon.png",
   "suggestedPrompts": [
