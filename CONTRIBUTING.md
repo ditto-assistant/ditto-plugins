@@ -20,6 +20,8 @@ host. Every root marketplace lists the same plugins, and
      "Sign in through Cursor" goes in the Cursor manifest, and Grok keywords must be
      brand-scoped because the Grok catalog uses them for its call-to-action.
    - put assets in `assets/` and reference them with relative `./assets/...` paths.
+   - keep the Agent Plugins `$schema` in `.antigravity-plugin/plugin.json` and leave
+     out its `skills` field; `agy plugin validate --strict` needs both.
    - rename the MCP server key to `<name>` in `.mcp.json`, `mcp.json`,
      `mcp_config.json` and the inline Copilot and Kimi entries.
 3. **Allow its endpoint.** Add `<name>: <https MCP URL>` to `HOSTED_MCP` in
