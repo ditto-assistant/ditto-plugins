@@ -27,6 +27,7 @@ MANIFESTS = {
     "copilot": ".github/plugin/plugin.json",
     "antigravity": ".antigravity-plugin/plugin.json",
     "kimi": ".kimi-plugin/plugin.json",
+    "gemini": "gemini-extension.json",
 }
 # Hosts that install a GitHub URL only from the repository root get a root
 # manifest that points into one plugin. Kimi Code reads <repo>/.kimi-plugin/plugin.json.
@@ -46,6 +47,11 @@ ALLOWED_FILES = {*MANIFESTS.values(), *MCP_FILES, "README.md", "shared-skills.lo
 TEXT = {".md", ".json", ".yaml", ".yml", ".txt"}
 ASSETS = {".png", ".svg"}
 SERVER_KEYS = {"type", "transport", "url", "serverUrl"}
+# Gemini CLI reads `url` as SSE and `httpUrl` as streamable HTTP, and loads
+# commands/, hooks/, policies/ and agents/ from the extension directory itself.
+GEMINI_KEYS = {"name", "version", "description", "mcpServers"}
+# Only Gemini reads httpUrl; another host given one would install without MCP.
+GEMINI_SERVER_KEYS = {"httpUrl"}
 
 
 def load(path):
@@ -63,12 +69,13 @@ def plugin_dir(root, entry):
     return root / source
 
 
-def check_server(name, server, plugin):
+def check_server(name, server, plugin, keys=SERVER_KEYS):
     """A hosted server declaration: URL plus transport only."""
     expected = HOSTED_MCP.get(plugin)
-    if not isinstance(server, dict) or set(server) - SERVER_KEYS:
+    if not isinstance(server, dict) or set(server) - keys:
         raise ValueError("Expected hosted Ditto MCP without launcher, headers or credentials")
-    url = server.get("url", server.get("serverUrl"))
+    urls = [server[k] for k in ("url", "serverUrl", "httpUrl") if k in server]
+    url = urls[0] if len(urls) == 1 else None
     kind = server.get("type", server.get("transport", "http"))
     if expected is None or url != expected or name != plugin or kind not in {"http", "streamable-http"}:
         raise ValueError("Expected hosted Ditto MCP without launcher, headers or credentials")
@@ -92,6 +99,11 @@ def check_manifest(host, manifest, plugin, folder):
     mcp = manifest.get("mcpServers")
     if host == "claude" and mcp is not None:
         raise ValueError("Unexpected runtime component in MCP-only claude manifest")  # Claude loads .mcp.json itself
+    if host == "gemini":
+        if set(manifest) - GEMINI_KEYS or not isinstance(manifest.get("mcpServers"), dict):
+            raise ValueError(f"gemini manifest may only set {sorted(GEMINI_KEYS)}")
+        if any(set(server) != {"httpUrl"} for server in manifest["mcpServers"].values() if isinstance(server, dict)):
+            raise ValueError("gemini manifest must declare the hosted server with httpUrl (streamable HTTP) only")
     if host == "antigravity":
         if manifest.get("$schema") != AGENT_PLUGINS_SCHEMA:
             raise ValueError("antigravity manifest must declare the Agent Plugins $schema (agy --strict warns on other hosts' MCP files otherwise)")
@@ -104,7 +116,7 @@ def check_manifest(host, manifest, plugin, folder):
         if len(mcp) != 1:
             raise ValueError("Expected hosted Ditto MCP without launcher, headers or credentials")
         for name, server in mcp.items():
-            check_server(name, server, plugin)
+            check_server(name, server, plugin, GEMINI_SERVER_KEYS if host == "gemini" else SERVER_KEYS)
     elif mcp is not None:
         raise ValueError(f"Unexpected mcpServers in {host} manifest")
     interface = manifest.get("interface") if isinstance(manifest.get("interface"), dict) else {}

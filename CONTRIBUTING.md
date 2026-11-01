@@ -13,9 +13,10 @@ host. Every root marketplace lists the same plugins, and
    skill needs this repository's host-connection adapter appended to it.
 2. **Scaffold `plugins/<name>/`** here by copying `plugins/ditto/` without
    `skills/` and `shared-skills.lock.json`. Then:
-   - set `name` to `<name>` in all seven host manifests (`.claude-plugin`,
+   - set `name` to `<name>` in all eight host manifests (`.claude-plugin`,
      `.cursor-plugin`, `.grok-plugin`, `.codex-plugin`, `.github/plugin`,
-     `.antigravity-plugin`, `.kimi-plugin`), and give them one shared `version`.
+     `.antigravity-plugin`, `.kimi-plugin`, `gemini-extension.json`), and give them
+     one shared `version`.
    - write host-tailored descriptions, keywords and display names. For example,
      "Sign in through Cursor" goes in the Cursor manifest, and Grok keywords must be
      brand-scoped because the Grok catalog uses them for its call-to-action.
@@ -23,10 +24,14 @@ host. Every root marketplace lists the same plugins, and
    - keep the Agent Plugins `$schema` in `.antigravity-plugin/plugin.json` and leave
      out its `skills` field; `agy plugin validate --strict` needs both.
    - rename the MCP server key to `<name>` in `.mcp.json`, `mcp.json`,
-     `mcp_config.json` and the inline Copilot and Kimi entries.
+     `mcp_config.json` and the inline Copilot, Kimi and Gemini entries.
    - Kimi Code installs a GitHub URL only from the repository root, and the root
      `.kimi-plugin/plugin.json` serves the `ditto` plugin. Other plugins install in
      Kimi from a clone of `plugins/<name>`.
+   - Gemini CLI installs from GitHub only through the `gemini-extension` branch, which
+     `.github/workflows/gemini-extension.yml` publishes from `plugins/ditto`. Another
+     plugin needs its own branch (`scripts/publish_extension_ref.py --plugin <name>
+     --branch <branch>`) or installs from a clone.
 3. **Allow its endpoint.** Add `<name>: <https MCP URL>` to `HOSTED_MCP` in
    `scripts/validate_package.py`. Only hosted HTTP servers are allowed: no
    commands, headers, env or credentials.

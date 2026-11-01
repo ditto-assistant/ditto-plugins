@@ -27,6 +27,7 @@ own OAuth flow: no API keys, npm helpers, CLI bootstrap or lifecycle hooks.
 | Codex | `.agents/plugins/marketplace.json` | `codex plugin marketplace add ditto-assistant/ditto-plugins` then `codex plugin add ditto@ditto-plugins` (or install from `/plugins`) |
 | GitHub Copilot CLI / VS Code | `.github/plugin/marketplace.json` | `copilot plugin marketplace add ditto-assistant/ditto-plugins` then `copilot plugin install ditto@ditto-plugins` |
 | Antigravity | `plugins/ditto/.antigravity-plugin/` | `agy plugin install https://github.com/ditto-assistant/ditto-plugins`, or `/plugin install ./plugins/ditto` from a clone |
+| Gemini CLI | `plugins/ditto/gemini-extension.json` (published to the `gemini-extension` branch) | `gemini extensions install https://github.com/ditto-assistant/ditto-plugins --ref gemini-extension`, or `gemini extensions install ./plugins/ditto` from a clone |
 | Kimi Code | `.kimi-plugin/plugin.json` (root, points into `plugins/ditto`) | `/plugins install https://github.com/ditto-assistant/ditto-plugins` in Kimi Code, or install `plugins/ditto` from a clone |
 
 ### Claude
@@ -127,6 +128,24 @@ rebased, and the validator keeps the two identical. To pin a branch or tag, use
 `https://github.com/ditto-assistant/ditto-plugins/tree/<ref>`. From a clone, install
 `./plugins/ditto` instead.
 
+### Gemini CLI
+
+```sh
+gemini extensions install https://github.com/ditto-assistant/ditto-plugins --ref gemini-extension
+```
+
+Gemini CLI installs a GitHub repository only from its root (`gemini-extension.json`
+at the top, skills in `skills/`) and has no subdirectory option. A root manifest here
+would also make Antigravity install the whole repository as a Gemini extension, so
+`.github/workflows/gemini-extension.yml` publishes `plugins/ditto` unchanged as the root
+of the `gemini-extension` branch after each change on `main`. Gemini first looks for a
+GitHub release with that tag, finds none, and asks whether to "attempt to install via
+git clone instead": answer yes. `gemini extensions list` then shows the three skills
+and the `ditto` MCP server. Sign in with `/mcp auth ditto` in a Gemini CLI session; `gemini mcp
+list` reports the server as Disconnected until then. From a clone, run
+`gemini extensions install ./plugins/ditto` or `gemini extensions link ./plugins/ditto`.
+`gemini extensions update ditto` follows the branch.
+
 The bundled skills are the verified loading path. The hosted MCP server also
 offers the canonical skill files through `skills/list`, `skills/get` and
 `resources/read` for compatible importers; keep the bundle installed. See the
@@ -157,11 +176,12 @@ the host-labelled sections of [`adapters/ditto-memory.md`](adapters/ditto-memory
 .agents/plugins/marketplace.json       # Codex
 .github/plugin/marketplace.json        # GitHub Copilot / VS Code
 .kimi-plugin/plugin.json               # Kimi Code GitHub installs (ditto, skills rebased into plugins/ditto)
+.github/workflows/gemini-extension.yml # publishes plugins/ditto as the root of the gemini-extension branch
 adapters/ditto-memory.md               # per-host connection guidance (source for the generated skill)
 plugins/<name>/
   .claude-plugin/plugin.json  .cursor-plugin/plugin.json  .grok-plugin/plugin.json
   .codex-plugin/plugin.json   .github/plugin/plugin.json  .antigravity-plugin/plugin.json
-  .kimi-plugin/plugin.json
+  .kimi-plugin/plugin.json    gemini-extension.json  # Gemini CLI (httpUrl, streamable HTTP)
   .mcp.json        # Claude, Cursor, Grok (type http)
   mcp.json         # Codex; Antigravity in Agent Plugins mode (portable, streamable-http)
   mcp_config.json  # Antigravity native mode (serverUrl)
@@ -181,6 +201,7 @@ python3 scripts/validate_package.py
 claude plugin validate ./plugins/ditto
 grok plugin validate ./plugins/ditto
 agy plugin validate --strict ./plugins/ditto
+gemini extensions validate ./plugins/ditto
 ```
 
 Source, package validation, installed plugin, authenticated MCP and actual tool
