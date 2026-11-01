@@ -120,7 +120,8 @@ def check_manifest(host, manifest, plugin, folder):
 def check_root_manifest(root, relative, host, plugin):
     """A root manifest is the plugin's own host manifest with paths rebased into plugins/<name>."""
     path = root / relative
-    if path.is_symlink():
+    parts = Path(relative).parts
+    if any((root / Path(*parts[:i])).is_symlink() for i in range(1, len(parts) + 1)):
         raise ValueError("Linked release input")
     if not path.is_file():
         raise ValueError(f"Missing root {host} manifest {relative}")

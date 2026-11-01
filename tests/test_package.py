@@ -103,6 +103,15 @@ class MCPReleaseTests(unittest.TestCase):
         linked.symlink_to(target)
         with self.assertRaisesRegex(ValueError, "Linked release input"):
             package.validate(self.root)
+        self.setUp()
+        folder = self.root / ".kimi-plugin"
+        outside = Path(self.tmp.name + "-outside")
+        shutil.copytree(folder, outside)
+        self.addCleanup(shutil.rmtree, outside)
+        shutil.rmtree(folder)
+        folder.symlink_to(outside, target_is_directory=True)
+        with self.assertRaisesRegex(ValueError, "Linked release input"):
+            package.validate(self.root)
 
     def test_other_endpoint_is_rejected(self):
         f = self.root / "plugins/ditto/.mcp.json"
