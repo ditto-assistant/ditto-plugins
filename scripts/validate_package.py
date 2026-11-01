@@ -46,10 +46,12 @@ RUNTIME = {"hooks", "commands", "agents", "userConfig", "settings", "lspServers"
 ALLOWED_FILES = {*MANIFESTS.values(), *MCP_FILES, "README.md", "shared-skills.lock.json"}
 TEXT = {".md", ".json", ".yaml", ".yml", ".txt"}
 ASSETS = {".png", ".svg"}
-SERVER_KEYS = {"type", "transport", "url", "serverUrl", "httpUrl"}
+SERVER_KEYS = {"type", "transport", "url", "serverUrl"}
 # Gemini CLI reads `url` as SSE and `httpUrl` as streamable HTTP, and loads
 # commands/, hooks/, policies/ and agents/ from the extension directory itself.
 GEMINI_KEYS = {"name", "version", "description", "mcpServers"}
+# Only Gemini reads httpUrl; another host given one would install without MCP.
+GEMINI_SERVER_KEYS = {"httpUrl"}
 
 
 def load(path):
@@ -67,10 +69,10 @@ def plugin_dir(root, entry):
     return root / source
 
 
-def check_server(name, server, plugin):
+def check_server(name, server, plugin, keys=SERVER_KEYS):
     """A hosted server declaration: URL plus transport only."""
     expected = HOSTED_MCP.get(plugin)
-    if not isinstance(server, dict) or set(server) - SERVER_KEYS:
+    if not isinstance(server, dict) or set(server) - keys:
         raise ValueError("Expected hosted Ditto MCP without launcher, headers or credentials")
     urls = [server[k] for k in ("url", "serverUrl", "httpUrl") if k in server]
     url = urls[0] if len(urls) == 1 else None
@@ -114,7 +116,7 @@ def check_manifest(host, manifest, plugin, folder):
         if len(mcp) != 1:
             raise ValueError("Expected hosted Ditto MCP without launcher, headers or credentials")
         for name, server in mcp.items():
-            check_server(name, server, plugin)
+            check_server(name, server, plugin, GEMINI_SERVER_KEYS if host == "gemini" else SERVER_KEYS)
     elif mcp is not None:
         raise ValueError(f"Unexpected mcpServers in {host} manifest")
     interface = manifest.get("interface") if isinstance(manifest.get("interface"), dict) else {}

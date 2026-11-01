@@ -61,6 +61,14 @@ class MCPReleaseTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "Expected hosted Ditto MCP"):
                     package.validate(self.root)
 
+    def test_http_url_is_only_accepted_from_gemini(self):
+        for relative in ("plugins/ditto/.mcp.json", "plugins/ditto/mcp_config.json", "plugins/ditto/.kimi-plugin/plugin.json"):
+            with self.subTest(relative=relative):
+                self.setUp()
+                self.edit(relative, lambda d: d["mcpServers"].__setitem__("ditto", {"httpUrl": "https://api.heyditto.ai/mcp"}))
+                with self.assertRaisesRegex(ValueError, "Expected hosted Ditto MCP"):
+                    package.validate(self.root)
+
     def test_antigravity_manifest_loads_as_agent_plugins_package(self):
         # Without the portable $schema, agy warns that .mcp.json and mcp.json are
         # never loaded and `agy plugin validate --strict` fails (DITTO-1800).
