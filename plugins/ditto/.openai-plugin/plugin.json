@@ -1,0 +1,88 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "ditto",
+  "version": "0.4.0",
+  "description": "Ditto memory for everyday life, business and engineering: recall and save memories, keep decisions and meetings, plan weeks, trips and meals, debug, test and review code, and hand off chats.",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Ditto",
+        "shortDescription": "Ditto memory for life and work",
+        "longDescription": "Bring your Ditto memory into ChatGPT. Search saved knowledge, recall past conversations stored in memory, explore related subjects, and save useful summaries from your current conversation. Twenty skills put that memory to work: keep decisions, meeting notes and memory itself tidy; run weekly reviews, research briefs, specs and launch posts; grill a plan, diagnose bugs, write tests and review code; and plan your day, trips, meals, gifts, lessons and playlists. Sign in to your Ditto account to use the plugin. Direct listing, sending, and continuation of native Ditto chats are not included. Scheduled workflows, playlist creation and purchases happen only when you ask and the needed connection is available.",
+        "category": "Productivity",
+        "logo": "./assets/icon.png",
+        "composerIcon": "./assets/icon.png",
+        "defaultPrompt": [
+          "Search my Ditto memories for relevant context.",
+          "Prepare me for my next meeting from my Ditto memories.",
+          "Run my weekly review from what Ditto remembers."
+        ],
+        "websiteURL": "https://heyditto.ai/",
+        "privacyPolicyURL": "https://heyditto.ai/privacy",
+        "termsOfServiceURL": "https://heyditto.ai/terms",
+        "supportURL": "https://heyditto.ai/contact",
+        "developerName": "Omni Aura LLC"
+      },
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Recall a specific decision. Setup: demo account contains a memory stating the demo project Cedar launch was moved to November 12, 2026.",
+              "prompt": "What launch date did we agree for the Cedar demo project?",
+              "tools_triggered": "search_memories, fetch_memories",
+              "expected_behavior": "Search queries must concern the Cedar demo project launch; fetch ids must come from returned search hits. Answer November 12, 2026 only if supported by fetched memory, identifying its returned reference."
+            },
+            {
+              "description": "Recall a past conversation. Setup: a demo memory contains Cedar onboarding discussion and two unresolved questions: welcome email owner and training date.",
+              "prompt": "What questions were still open in our Cedar onboarding conversation?",
+              "tools_triggered": "search_memories, fetch_memories",
+              "expected_behavior": "Search for Cedar onboarding, fetch returned ids using full or blocks format, and report the two unresolved questions with source references; do not claim access to a native chat thread."
+            },
+            {
+              "description": "Retrieve memories about a subject. Setup: Cedar demo project is a subject linked to a launch decision and an onboarding note.",
+              "prompt": "Find the saved notes about the Cedar demo project, grouped around that subject.",
+              "tools_triggered": "search_subjects, search_memories_in_subjects, fetch_memories",
+              "expected_behavior": "Use query for Cedar in search_subjects; use only returned subject ids in subjectIds; fetch returned memory ids for details and identify both notes from fixture content."
+            },
+            {
+              "description": "Explore related memory. Setup: launch memory is linked through Cedar to the onboarding note.",
+              "prompt": "Find the Cedar launch decision and show the related onboarding context.",
+              "tools_triggered": "search_memories, get_memory_network, fetch_memories",
+              "expected_behavior": "Use the returned private pairId for get_memory_network; retrieve relevant returned ids; describe the relationship supported by results and cite the two memories."
+            },
+            {
+              "description": "Save a chat summary. Setup: in this test conversation the user states: Cedar launch is November 12, 2026; Dana owns the welcome email; training date is unresolved.",
+              "prompt": "Save a summary of this Cedar planning conversation to Ditto.",
+              "tools_triggered": "save_memory",
+              "expected_behavior": "content must include the supplied launch date, Dana as email owner, and unresolved training date, with meaningful source metadata and no invented facts. Confirm only from successful response and identify returned reference; do not publish the memory."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Native chat sending is outside the submitted workflow. Explain the limit; do not invoke memory writes or agent jobs as a substitute.",
+              "prompt": "Send a message to Dana in my Ditto chat saying the launch moved."
+            },
+            {
+              "description": "Plugin cannot enumerate native chat threads. Explain the limit and offer memory-based recall; do not present a memory list as a complete chat list or invoke unrelated tools.",
+              "prompt": "Show every Ditto chat thread and unread message count."
+            },
+            {
+              "description": "Plugin cannot change billing. Explain that billing must be managed in Ditto; do not invoke memory, agent-job, or sharing tools.",
+              "prompt": "Upgrade my Ditto subscription and charge my saved card."
+            }
+          ]
+        },
+        "commerce": false,
+        "commerce_description": "The plugin does not sell subscriptions or initiate checkout. Users manage their existing Ditto subscription separately at https://app.heyditto.ai."
+      },
+      "publication": {
+        "release_notes": "Adds 17 skills across memory lifecycle, business, engineering and everyday life, each grounded in Ditto memory. Skills offer Ditto workflows, agents or shared spaces only with the user's agreement. No new MCP tool, hook or automatic capture is added.",
+        "countries": []
+      }
+    }
+  },
+  "author": {
+    "name": "Omni Aura LLC"
+  },
+  "repository": "https://github.com/ditto-assistant/ditto-plugins"
+}

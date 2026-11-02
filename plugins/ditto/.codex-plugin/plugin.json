@@ -1,6 +1,6 @@
 {
   "name": "ditto",
-  "version": "0.3.8",
+  "version": "0.4.0",
   "author": {
     "name": "Omni Aura LLC",
     "email": "support@heyditto.ai",
@@ -17,13 +17,13 @@
     "knowledge-graph",
     "mcp"
   ],
-  "description": "Search and save Ditto memories through hosted MCP, curate music, and hand off chats with verified continuation notes. Archival and owned workspace cleanup depend on host capabilities and authorization. Sign in through Codex.",
+  "description": "Ditto memory through hosted MCP, with 20 skills for life, business and engineering: recall and save context, keep decisions, meetings and weekly reviews, debug, test and review code, plan days, trips and meals, curate music, and hand off chats. Archival and owned workspace cleanup depend on host capabilities and authorization. Sign in through Codex.",
   "skills": "./skills/",
   "mcpServers": "./mcp.json",
   "interface": {
     "displayName": "Ditto",
-    "shortDescription": "Recall and save your Ditto memories, curate music, and hand off chats.",
-    "longDescription": "Search and save Ditto memories through hosted MCP, curate music, and hand off chats with verified continuation notes. Archival and owned workspace cleanup depend on host capabilities and authorization. Sign in through Codex.",
+    "shortDescription": "Ditto memory, with skills for life, business and engineering.",
+    "longDescription": "Ditto memory through hosted MCP, with 20 skills for life, business and engineering: recall and save context, keep decisions, meetings and weekly reviews, debug, test and review code, plan days, trips and meals, curate music, and hand off chats. Archival and owned workspace cleanup depend on host capabilities and authorization. Sign in through Codex.",
     "developerName": "Omni Aura LLC",
     "category": "Productivity",
     "capabilities": [
@@ -35,8 +35,8 @@
     "termsOfServiceURL": "https://heyditto.ai/terms",
     "defaultPrompt": [
       "What do my Ditto memories say about this project?",
-      "Save this decision to Ditto.",
-      "Hand off this chat with a Ditto continuation note."
+      "Grill me on this plan, then save the decisions to Ditto.",
+      "Run my weekly review from what Ditto remembers."
     ],
     "logo": "./assets/icon.png",
     "composerIcon": "./assets/icon.png",

@@ -61,7 +61,8 @@ class MCPReleaseTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "Expected hosted Ditto MCP"):
                     package.validate(self.root)
 
-    def test_http_url_is_only_accepted_from_gemini(self):
+    def test_http_url_is_rejected(self):
+        # Only the retired Gemini CLI read httpUrl; any other host given one installs without MCP.
         for relative in ("plugins/ditto/.mcp.json", "plugins/ditto/mcp_config.json", "plugins/ditto/.kimi-plugin/plugin.json"):
             with self.subTest(relative=relative):
                 self.setUp()
@@ -121,14 +122,26 @@ class MCPReleaseTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Linked release input"):
             package.validate(self.root)
 
-    def test_gemini_extension_is_mcp_only_streamable_http(self):
-        relative = "plugins/ditto/gemini-extension.json"
+    def test_openai_manifest_is_a_portable_listing_of_this_repository(self):
+        relative = "plugins/ditto/.openai-plugin/plugin.json"
+        listing = lambda d: d["extensions"]["com.openai"]["interface"]
         cases = (
-            (lambda d: d["mcpServers"].__setitem__("ditto", {"url": "https://api.heyditto.ai/mcp"}), "httpUrl"),
-            (lambda d: d["mcpServers"]["ditto"].__setitem__("headers", {"Authorization": "Bearer x"}), "httpUrl"),
-            (lambda d: d.__setitem__("excludeTools", ["run_shell_command"]), "may only set"),
-            (lambda d: d.__setitem__("contextFileName", "GEMINI.md"), "may only set"),
-            (lambda d: d["mcpServers"]["ditto"].__setitem__("httpUrl", "https://example.com/mcp"), "Expected hosted Ditto MCP"),
+            (lambda d: d.pop("$schema"), "portable Agent Plugins"),
+            (lambda d: d["extensions"].pop("com.openai"), "portable Agent Plugins"),
+            (lambda d: d.__setitem__("repository", "https://github.com/ditto-assistant/ditto-openai-plugins"), "repository must be"),
+            (lambda d: listing(d).__setitem__("shortDescription", "x" * 31), "30"),
+            (lambda d: listing(d).__setitem__("defaultPrompt", ["a", "b", "c", "d"]), "starter prompts"),
+            (lambda d: listing(d).__setitem__("defaultPrompt", ["x" * 129]), "starter prompts"),
+            (lambda d: listing(d).__setitem__("logo", "./assets/ditto-icon.png"), "missing asset"),
+            (lambda d: d.__setitem__("version", "9.9.9"), "share one version"),
+            # Malformed types are rejected, never a crash.
+            (lambda d: d["extensions"].__setitem__("com.openai", []), "portable Agent Plugins"),
+            (lambda d: listing(d).__setitem__("displayName", 7), "at most 30"),
+            (lambda d: listing(d).pop("longDescription"), "at most 4000"),
+            (lambda d: listing(d).__setitem__("defaultPrompt", "one prompt"), "starter prompts"),
+            (lambda d: listing(d).__setitem__("defaultPrompt", [["nested"]]), "starter prompts"),
+            (lambda d: d["extensions"]["com.openai"].__setitem__("review", []), "positive test cases"),
+            (lambda d: d["extensions"]["com.openai"]["review"]["test_cases"].__setitem__("negative", ["text"]), "negative test cases"),
         )
         for change, message in cases:
             with self.subTest(message=message):
@@ -138,10 +151,23 @@ class MCPReleaseTests(unittest.TestCase):
                     package.validate(self.root)
         self.setUp()
         (self.root / relative).unlink()
-        with self.assertRaisesRegex(ValueError, "Missing gemini manifest"):
+        with self.assertRaisesRegex(ValueError, "Missing openai manifest"):
             package.validate(self.root)
 
-    def test_gemini_extension_directories_are_not_release_files(self):
+    def test_chatgpt_upload_carries_only_the_openai_package(self):
+        import zipfile
+        out = Path(self.tmp.name).parent / f"{Path(self.tmp.name).name}-upload.zip"
+        self.addCleanup(out.unlink, missing_ok=True)
+        _, count = package.archive(self.root, out)
+        names = zipfile.ZipFile(out).namelist()
+        self.assertEqual(count, len(names))
+        self.assertIn("ditto/plugin.json", names)
+        self.assertIn("ditto/skills/ditto-memory/SKILL.md", names)
+        self.assertFalse([n for n in names if "/." in n], "other hosts' manifests must stay out of the upload")
+        with self.assertRaisesRegex(ValueError, "outside the repository"):
+            package.archive(self.root, self.root / "ditto.zip")
+
+    def test_runtime_directories_are_not_release_files(self):
         for folder in ("commands", "hooks", "policies", "agents"):
             with self.subTest(folder=folder):
                 self.setUp()
@@ -178,7 +204,7 @@ class MCPReleaseTests(unittest.TestCase):
             self.edit(f"plugins/ditto-extra/{relative}", lambda d: d.__setitem__("name", "ditto-extra"))
         for relative in ("plugins/ditto-extra/.mcp.json", "plugins/ditto-extra/mcp.json", "plugins/ditto-extra/mcp_config.json"):
             self.edit(relative, lambda d: d.__setitem__("mcpServers", {"ditto-extra": d["mcpServers"]["ditto"]}))
-        for relative in ("plugins/ditto-extra/.github/plugin/plugin.json", "plugins/ditto-extra/.kimi-plugin/plugin.json", "plugins/ditto-extra/gemini-extension.json"):
+        for relative in ("plugins/ditto-extra/.github/plugin/plugin.json", "plugins/ditto-extra/.kimi-plugin/plugin.json"):
             self.edit(relative, lambda d: d.__setitem__("mcpServers", {"ditto-extra": d["mcpServers"]["ditto"]}))
         with patch.dict(package.HOSTED_MCP, {"ditto-extra": "https://api.heyditto.ai/mcp"}):
             with self.assertRaisesRegex(ValueError, "listed in every marketplace"):

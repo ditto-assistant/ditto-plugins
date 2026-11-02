@@ -43,7 +43,6 @@ Use the hosted Ditto MCP server at https://api.heyditto.ai/mcp, declared by this
 - **Codex and ChatGPT**: the server comes from `mcp.json`. Authenticate through the plugin's install or connection prompt; in the Codex CLI, `/mcp` shows its status.
 - **GitHub Copilot and VS Code**: the server is declared in the plugin manifest. Start and sign in from the MCP servers view or the Copilot CLI's `/mcp`.
 - **Antigravity**: the server comes from `mcp_config.json`. Sign in from the MCP servers panel when prompted.
-- **Gemini CLI**: the server is declared in `gemini-extension.json`. Check it with `/mcp` and sign in with `/mcp auth ditto`.
 - **Other hosts**: use whatever MCP connection UI the host provides for the plugin's declared server.
 
 Discover the connected server's live tools and resources, including `memory://capabilities` when exposed. Use its MCP tools for search, full-content fetch and authorized saves or updates; do not invent tool names or assume every host exposes every capability. If the server is missing or authentication has expired, explain the gap and ask the user to connect or reconnect through the host. Never request API keys in chat or fall back to shell memory commands.

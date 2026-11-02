@@ -9,7 +9,7 @@
     {
       "name": "ditto",
       "source": "./plugins/ditto",
-      "description": "Recall and save Ditto memories through hosted MCP, curate music, and hand off chats with verified continuation notes.",
+      "description": "Ditto memory through hosted MCP, with 20 skills for life, business and engineering, from decision logs and weekly reviews to code review and trip planning.",
       "category": "productivity",
       "homepage": "https://heyditto.ai",
       "keywords": [

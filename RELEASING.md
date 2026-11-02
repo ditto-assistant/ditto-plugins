@@ -17,13 +17,13 @@ not distribute or refresh a CLI, run hooks or provision agent accounts.
    generator automatically patch-bumps changed skill content; avoid a second bump.
 3. Run the offline verifier, `python3 -m unittest discover -s tests -v`,
    `python3 scripts/validate_package.py`, `claude plugin validate ./plugins/ditto`, and
-   `grok plugin validate ./plugins/ditto`, `agy plugin validate --strict ./plugins/ditto` and
-   `gemini extensions validate ./plugins/ditto` where those CLIs are available. Merging a
-   change under `plugins/ditto` also republishes the `gemini-extension` branch.
+   `grok plugin validate ./plugins/ditto` and `agy plugin validate --strict ./plugins/ditto`
+   where those CLIs are available. For a ChatGPT directory submission, build the upload
+   with `python3 scripts/validate_package.py --archive /path/outside/repo/ditto.zip`.
 4. Open a PR and inspect current-head CI and Ditto Review. Merge only when authorized.
    Every host marketplace tracks main, so merging updates the plugin on all hosts.
 5. Refresh the marketplace and update Ditto in the actual host. Verify the installed
-   version, two skills and Ditto MCP connector. Authenticate through the host flow
+   version, the bundled skills and Ditto MCP connector. Authenticate through the host flow
    and verify tools separately before claiming live memory behavior.
 
 Claude Code users can run `/plugin marketplace update ditto-claude-plugins` then
