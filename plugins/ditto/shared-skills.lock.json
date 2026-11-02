@@ -1,16 +1,33 @@
 {
   "schema_version": 1,
   "source_repository": "https://github.com/ditto-assistant/ditto-skills",
-  "source_commit": "b4065445c5bc4d637503f0982119b957686dbf50",
+  "source_commit": "6adea513b2633efc05f2f34d9f655adceeca2c37",
   "host": "plugins",
   "core_sha256": "5912af5483c469ec15db27858122fc9128fc25cd239202c0fdd9727de7dd5f6b",
   "adapter_sha256": "c44c1d6054861d915c77f6333f1f972b9c3144cbc8d3c387988c3af9b917d9a4",
-  "generator_sha256": "f0fe5c02da33e861c0962230d0d1486a0542b915808c33b8bd8d4350012467db",
+  "generator_sha256": "210bce4b3167244d234ee0cc0e5adf771a72ce78a99675ad9dcf103969018d12",
   "skill_sha256": "d74135ea9af4d33fe1fb55727b3dbe93e448449ac124f95b333f0aebfdf880ed",
   "files_sha256": {
+    "plugins/ditto/skills/code-review/SKILL.md": "6696e1a3d3887ad8d5e115e463d1ad0f5652db3032ad9d425584460c0dbe4a76",
     "plugins/ditto/skills/curate-music/SKILL.md": "b498f8639aeb64e59f88830ac162a894f9f128b7e1f2db6a7c528092904c1eb4",
     "plugins/ditto/skills/curate-music/references/youtube-music.md": "e763797cc7821114682c7b92cec6919e6f957792cdc54756f670c7086b09e52c",
+    "plugins/ditto/skills/daily-brief/SKILL.md": "aa4b1398e2b1fb1ad0b6588ff92e44e07b96316204544429c7582f56828e6dfd",
+    "plugins/ditto/skills/decision-log/SKILL.md": "fe131adeab044ebef9ec0d98be607629cdf7acf27b65d344ac6a01b333a52985",
+    "plugins/ditto/skills/diagnose-bug/SKILL.md": "b1899c41cc9362b41fbe5bd069352cb1ddc8e209bb9e33e0558fd0aef29b3ab6",
+    "plugins/ditto/skills/gift-ideas/SKILL.md": "f8c60204bb8fb8156e1a6d2e7130009a905d6cb2b3dfecf5098f1983b58b1db1",
+    "plugins/ditto/skills/grill-me/SKILL.md": "14e9e774d33286f0a51fc8521dd9ed479e7eccbd5567697da3a6586b8564cf2a",
     "plugins/ditto/skills/handoff/SKILL.md": "84624fa46d8740f0dc0a26055dd427be5aa664edeac5193542b256ca2c3b733d",
-    "plugins/ditto/skills/handoff/references/workspace-cleanup.md": "be4d5ec45fdaf7ed5a16c00bec7b013a61b86f26084cfaeddc39f430c4c92a53"
+    "plugins/ditto/skills/handoff/references/workspace-cleanup.md": "be4d5ec45fdaf7ed5a16c00bec7b013a61b86f26084cfaeddc39f430c4c92a53",
+    "plugins/ditto/skills/launch-post/SKILL.md": "1c634996254a9a48df0b3f6ec8ae8aa094231286927686bccb82354a06b90307",
+    "plugins/ditto/skills/learn-anything/SKILL.md": "997550bbdb5354c2e0e95ad358a69bd5a3f2209f22a401c1eac64bfbb9a6d9f0",
+    "plugins/ditto/skills/plan-meals/SKILL.md": "ca6959b54c5008e23c902c1cc8785fc63047f78988ed334bdc94fd46ccda8787",
+    "plugins/ditto/skills/plan-trip/SKILL.md": "ed7aac4da4219030b40f50ecbfd726fa3adbf85042387a608f0b0c90984caf3e",
+    "plugins/ditto/skills/prep-meeting/SKILL.md": "13e49ec46686cee975fb3ab13fc86c8de01378e4a749415efdc0ba9efb08f83a",
+    "plugins/ditto/skills/research-brief/SKILL.md": "3fa3d9c865b48f7d3a6aa76e5570619983afb8adac783e56c6c9a4438ad31780",
+    "plugins/ditto/skills/tdd/SKILL.md": "95dcdd4fc7eab08662a8cf37ce10efc26aafde87eda94c714e9c66977fc9ee18",
+    "plugins/ditto/skills/tidy-memory/SKILL.md": "496c0cbeabb76e4874f106f91ec14221b80c8111e28af814daa36c52487ea7f9",
+    "plugins/ditto/skills/verify-done/SKILL.md": "5cd669a2157d9723c19449571aafc8cbe880a42bf54bc7a72e5119f9318c858c",
+    "plugins/ditto/skills/weekly-review/SKILL.md": "efecbfcc90f68222ce1072272063a4ea7111a69bc636f0273814bc060aaa8753",
+    "plugins/ditto/skills/write-spec/SKILL.md": "3d93adbf733f71dc14cbbf07f98865c766fcc4c837d1e01e3785978e630dad1d"
   }
 }

@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
   "name": "ditto",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "description": "Search and save Ditto memories through hosted MCP, curate music, and hand off chats with verified continuation notes. Archival and owned workspace cleanup depend on host capabilities and authorization. Sign in through Claude.",
   "author": {
     "name": "Omni Aura LLC",
