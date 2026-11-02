@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
 """Check the MCP-only, multi-host plugin release boundary without connecting an account.
 
+`--archive <zip outside the repository>` also writes and byte-verifies the ChatGPT
+directory upload: plugins/ditto/.openai-plugin/plugin.json as ditto/plugin.json,
+with mcp.json, README, assets and skills.
+
 Every root marketplace must list the same plugins. Each plugin lives in
 plugins/<name>/ with one manifest per host, one shared skills/ folder and
 hosted-MCP configuration only: no launchers, credentials, hooks, commands or
 agents.
 """
+import argparse
 import json
 import re
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,7 +33,10 @@ MANIFESTS = {
     "copilot": ".github/plugin/plugin.json",
     "antigravity": ".antigravity-plugin/plugin.json",
     "kimi": ".kimi-plugin/plugin.json",
-    "gemini": "gemini-extension.json",
+    # ChatGPT reads a portable Agent Plugins manifest, with its listing under
+    # extensions["com.openai"], at the root of its upload. Kept out of the plugin
+    # root here because Grok prefers a root plugin.json over .grok-plugin/.
+    "openai": ".openai-plugin/plugin.json",
 }
 # Hosts that install a GitHub URL only from the repository root get a root
 # manifest that points into one plugin. Kimi Code reads <repo>/.kimi-plugin/plugin.json.
@@ -47,11 +56,7 @@ ALLOWED_FILES = {*MANIFESTS.values(), *MCP_FILES, "README.md", "shared-skills.lo
 TEXT = {".md", ".json", ".yaml", ".yml", ".txt"}
 ASSETS = {".png", ".svg"}
 SERVER_KEYS = {"type", "transport", "url", "serverUrl"}
-# Gemini CLI reads `url` as SSE and `httpUrl` as streamable HTTP, and loads
-# commands/, hooks/, policies/ and agents/ from the extension directory itself.
-GEMINI_KEYS = {"name", "version", "description", "mcpServers"}
-# Only Gemini reads httpUrl; another host given one would install without MCP.
-GEMINI_SERVER_KEYS = {"httpUrl"}
+REPOSITORY = "https://github.com/ditto-assistant/ditto-plugins"
 
 
 def load(path):
@@ -69,12 +74,12 @@ def plugin_dir(root, entry):
     return root / source
 
 
-def check_server(name, server, plugin, keys=SERVER_KEYS):
+def check_server(name, server, plugin):
     """A hosted server declaration: URL plus transport only."""
     expected = HOSTED_MCP.get(plugin)
-    if not isinstance(server, dict) or set(server) - keys:
+    if not isinstance(server, dict) or set(server) - SERVER_KEYS:
         raise ValueError("Expected hosted Ditto MCP without launcher, headers or credentials")
-    urls = [server[k] for k in ("url", "serverUrl", "httpUrl") if k in server]
+    urls = [server[k] for k in ("url", "serverUrl") if k in server]
     url = urls[0] if len(urls) == 1 else None
     kind = server.get("type", server.get("transport", "http"))
     if expected is None or url != expected or name != plugin or kind not in {"http", "streamable-http"}:
@@ -99,11 +104,23 @@ def check_manifest(host, manifest, plugin, folder):
     mcp = manifest.get("mcpServers")
     if host == "claude" and mcp is not None:
         raise ValueError("Unexpected runtime component in MCP-only claude manifest")  # Claude loads .mcp.json itself
-    if host == "gemini":
-        if set(manifest) - GEMINI_KEYS or not isinstance(manifest.get("mcpServers"), dict):
-            raise ValueError(f"gemini manifest may only set {sorted(GEMINI_KEYS)}")
-        if any(set(server) != {"httpUrl"} for server in manifest["mcpServers"].values() if isinstance(server, dict)):
-            raise ValueError("gemini manifest must declare the hosted server with httpUrl (streamable HTTP) only")
+    if host == "openai":
+        listing = manifest.get("extensions", {}).get("com.openai", {}) if isinstance(manifest.get("extensions"), dict) else {}
+        if manifest.get("$schema") != AGENT_PLUGINS_SCHEMA or not isinstance(listing.get("interface"), dict):
+            raise ValueError("openai manifest must be a portable Agent Plugins manifest with extensions.com.openai.interface")
+        if manifest.get("repository") != REPOSITORY:
+            raise ValueError(f"openai manifest repository must be {REPOSITORY}")
+        # Directory listing limits (docs/openai/listing-fields-and-engineering-handoff.md).
+        ui = listing["interface"]
+        prompts = ui.get("defaultPrompt", [])
+        if len(ui.get("displayName", "")) > 30 or len(ui.get("shortDescription", "")) > 30 or len(ui.get("longDescription", "")) > 4000:
+            raise ValueError("openai listing exceeds displayName/shortDescription 30 or longDescription 4000 characters")
+        if len(prompts) > 3 or len(set(prompts)) != len(prompts) or any(len(x) > 128 for x in prompts):
+            raise ValueError("openai listing allows up to 3 unique starter prompts of at most 128 characters")
+        cases = listing.get("review", {}).get("test_cases", {})
+        for category, required in (("positive", ("description", "prompt", "tools_triggered", "expected_behavior")), ("negative", ("description", "prompt"))):
+            if not cases.get(category) or any(not all(isinstance(c.get(k), str) and c[k].strip() for k in required) for c in cases[category]):
+                raise ValueError(f"openai review needs complete {category} test cases")
     if host == "antigravity":
         if manifest.get("$schema") != AGENT_PLUGINS_SCHEMA:
             raise ValueError("antigravity manifest must declare the Agent Plugins $schema (agy --strict warns on other hosts' MCP files otherwise)")
@@ -116,10 +133,12 @@ def check_manifest(host, manifest, plugin, folder):
         if len(mcp) != 1:
             raise ValueError("Expected hosted Ditto MCP without launcher, headers or credentials")
         for name, server in mcp.items():
-            check_server(name, server, plugin, GEMINI_SERVER_KEYS if host == "gemini" else SERVER_KEYS)
+            check_server(name, server, plugin)
     elif mcp is not None:
         raise ValueError(f"Unexpected mcpServers in {host} manifest")
     interface = manifest.get("interface") if isinstance(manifest.get("interface"), dict) else {}
+    if host == "openai":
+        interface = manifest["extensions"]["com.openai"]["interface"]
     for key in ("icon", "logo"):
         for value in (manifest.get(key), interface.get(key), interface.get("composerIcon")):
             if isinstance(value, str) and not (folder / value).is_file():
@@ -205,5 +224,37 @@ def validate(root):
     return count
 
 
+def openai_upload(root, plugin="ditto"):
+    """The files ChatGPT reads; other hosts' manifests stay out of the upload."""
+    folder = root / "plugins" / plugin
+    upload = {"plugin.json": folder / MANIFESTS["openai"]}
+    for f in [folder / "mcp.json", folder / "README.md", *sorted(p for d in ("assets", "skills") for p in (folder / d).rglob("*") if p.is_file())]:
+        upload[f.relative_to(folder).as_posix()] = f
+    return folder, upload
+
+
+def archive(root, output):
+    validate(root)
+    folder, upload = openai_upload(root)
+    output = Path(output).resolve()
+    if output.is_relative_to(Path(root).resolve()):
+        raise ValueError("Archive must be written outside the repository")
+    names = {f"{folder.name}/{name}": f for name, f in upload.items()}
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as bundle:
+        for name, f in names.items():
+            bundle.write(f, name)
+    with zipfile.ZipFile(output) as bundle:
+        if bundle.testzip() is not None or set(bundle.namelist()) != set(names) or any(bundle.read(n) != f.read_bytes() for n, f in names.items()):
+            raise ValueError("Archive differs from validated source")
+    return output, len(names)
+
+
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--archive", type=Path, help="write the ChatGPT directory upload ZIP here (outside the repository)")
+    args = parser.parse_args()
     print(f"MCP-only multi-host package verified: {validate(ROOT)} files")
+    if args.archive:
+        path, count = archive(ROOT, args.archive)
+        print(f"ChatGPT upload verified: {path} ({count} files). Host behavior and submission readiness remain unverified.")

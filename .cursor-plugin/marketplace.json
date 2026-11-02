@@ -11,7 +11,7 @@
     {
       "name": "ditto",
       "source": "./plugins/ditto",
-      "description": "Ditto memory in Cursor: recall and save authorized context through hosted MCP, curate music, and hand off chats."
+      "description": "Ditto memory in Cursor through hosted MCP, with 20 skills for engineering, business and life: grill plans, diagnose bugs, write tests, review code, keep decisions, and hand off chats."
     }
   ]
 }

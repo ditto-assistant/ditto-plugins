@@ -13,13 +13,32 @@ This one folder is a native plugin for each supported host:
 | Grok Build | `.grok-plugin/plugin.json` | `.mcp.json` | `grok plugin install ditto --trust` after `grok plugin marketplace add ditto-assistant/ditto-plugins` |
 | Codex | `.codex-plugin/plugin.json` | `mcp.json` | `codex plugin marketplace add ditto-assistant/ditto-plugins`, then `/plugins` |
 | GitHub Copilot, VS Code | `.github/plugin/plugin.json` | inline | `copilot plugin install ditto@ditto-plugins` |
-| Antigravity | `.antigravity-plugin/plugin.json` | `mcp_config.json` | `/plugin install ./plugins/ditto` from a clone |
-| Kimi Code | `.kimi-plugin/plugin.json` | inline | local install from a clone |
+| Antigravity | `.antigravity-plugin/plugin.json` | `mcp_config.json` | `agy plugin install https://github.com/ditto-assistant/ditto-plugins` |
+| Kimi Code | `.kimi-plugin/plugin.json` | inline | `/plugins install https://github.com/ditto-assistant/ditto-plugins` |
+| ChatGPT | `.openai-plugin/plugin.json` | `mcp.json` | ChatGPT directory |
 
 Claude desktop Chat/Cowork and Claude Code have separate plugin installations; in
 Chat and Cowork, add the `ditto-assistant/ditto-plugins` repository under
 Customize → Plugins → Add marketplace. See the [repository README](../../README.md)
 for each host's full steps.
+
+## Skills
+
+Twenty skills put your Ditto memory to work. Each one recalls what Ditto knows
+first, saves only what you approve, and sets up a Ditto workflow, agent or shared
+space only when you agree to that specific one.
+
+- **Memory:** `ditto-memory`, `handoff`, `tidy-memory` (fix duplicate and stale
+  memories), `decision-log` (decisions with rationale, shared with your team).
+- **Business:** `prep-meeting`, `weekly-review`, `research-brief`, `write-spec`,
+  `launch-post`.
+- **Engineering:** `grill-me` (stress-test a plan), `diagnose-bug`, `tdd`,
+  `code-review`, `verify-done`.
+- **Life:** `daily-brief`, `learn-anything`, `plan-trip`, `plan-meals`,
+  `gift-ideas`, `curate-music`.
+
+Try: "Prepare me for my meeting with the Cedar team", "Grill me on this plan",
+"Run my weekly review", or "Plan meals for this week around what my family likes."
 
 Use `/ditto-memory` to search memories, fetch supporting content, and save or
 update useful information when authorized. Live MCP schemas determine available
@@ -54,5 +73,7 @@ manage those separately if no longer needed. Reload or restart running sessions
 to pick up the new plugin components.
 
 Support: support@heyditto.ai. [Privacy](https://heyditto.ai/privacy) ·
-[Terms](https://heyditto.ai/terms). Music skill adapted from Omar Barazanji's
+[Terms](https://heyditto.ai/terms). Several engineering and learning skills are
+original adaptations of ideas from [mattpocock/skills](https://github.com/mattpocock/skills)
+(MIT). Music skill adapted from Omar Barazanji's
 [heyditto-stack PR #115](https://github.com/ditto-assistant/heyditto-stack/pull/115).
