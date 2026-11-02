@@ -105,21 +105,25 @@ def check_manifest(host, manifest, plugin, folder):
     if host == "claude" and mcp is not None:
         raise ValueError("Unexpected runtime component in MCP-only claude manifest")  # Claude loads .mcp.json itself
     if host == "openai":
-        listing = manifest.get("extensions", {}).get("com.openai", {}) if isinstance(manifest.get("extensions"), dict) else {}
-        if manifest.get("$schema") != AGENT_PLUGINS_SCHEMA or not isinstance(listing.get("interface"), dict):
+        def obj(value):
+            return value if isinstance(value, dict) else {}
+        listing = obj(obj(manifest.get("extensions")).get("com.openai"))
+        ui = listing.get("interface")
+        if manifest.get("$schema") != AGENT_PLUGINS_SCHEMA or not isinstance(ui, dict):
             raise ValueError("openai manifest must be a portable Agent Plugins manifest with extensions.com.openai.interface")
         if manifest.get("repository") != REPOSITORY:
             raise ValueError(f"openai manifest repository must be {REPOSITORY}")
         # Directory listing limits (docs/openai/listing-fields-and-engineering-handoff.md).
-        ui = listing["interface"]
+        limits = {"displayName": 30, "shortDescription": 30, "longDescription": 4000}
+        if any(not isinstance(ui.get(k), str) or not ui[k].strip() or len(ui[k]) > n for k, n in limits.items()):
+            raise ValueError("openai listing needs displayName and shortDescription of at most 30 characters and a longDescription of at most 4000")
         prompts = ui.get("defaultPrompt", [])
-        if len(ui.get("displayName", "")) > 30 or len(ui.get("shortDescription", "")) > 30 or len(ui.get("longDescription", "")) > 4000:
-            raise ValueError("openai listing exceeds displayName/shortDescription 30 or longDescription 4000 characters")
-        if len(prompts) > 3 or len(set(prompts)) != len(prompts) or any(len(x) > 128 for x in prompts):
+        if not isinstance(prompts, list) or any(not isinstance(x, str) or not x.strip() or len(x) > 128 for x in prompts) or len(prompts) > 3 or len(set(prompts)) != len(prompts):
             raise ValueError("openai listing allows up to 3 unique starter prompts of at most 128 characters")
-        cases = listing.get("review", {}).get("test_cases", {})
+        cases = obj(obj(listing.get("review")).get("test_cases"))
         for category, required in (("positive", ("description", "prompt", "tools_triggered", "expected_behavior")), ("negative", ("description", "prompt"))):
-            if not cases.get(category) or any(not all(isinstance(c.get(k), str) and c[k].strip() for k in required) for c in cases[category]):
+            entries = cases.get(category)
+            if not isinstance(entries, list) or not entries or any(not isinstance(c, dict) or not all(isinstance(c.get(k), str) and c[k].strip() for k in required) for c in entries):
                 raise ValueError(f"openai review needs complete {category} test cases")
     if host == "antigravity":
         if manifest.get("$schema") != AGENT_PLUGINS_SCHEMA:
@@ -138,7 +142,7 @@ def check_manifest(host, manifest, plugin, folder):
         raise ValueError(f"Unexpected mcpServers in {host} manifest")
     interface = manifest.get("interface") if isinstance(manifest.get("interface"), dict) else {}
     if host == "openai":
-        interface = manifest["extensions"]["com.openai"]["interface"]
+        interface = ui
     for key in ("icon", "logo"):
         for value in (manifest.get(key), interface.get(key), interface.get("composerIcon")):
             if isinstance(value, str) and not (folder / value).is_file():

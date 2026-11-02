@@ -134,6 +134,14 @@ class MCPReleaseTests(unittest.TestCase):
             (lambda d: listing(d).__setitem__("defaultPrompt", ["x" * 129]), "starter prompts"),
             (lambda d: listing(d).__setitem__("logo", "./assets/ditto-icon.png"), "missing asset"),
             (lambda d: d.__setitem__("version", "9.9.9"), "share one version"),
+            # Malformed types are rejected, never a crash.
+            (lambda d: d["extensions"].__setitem__("com.openai", []), "portable Agent Plugins"),
+            (lambda d: listing(d).__setitem__("displayName", 7), "at most 30"),
+            (lambda d: listing(d).pop("longDescription"), "at most 4000"),
+            (lambda d: listing(d).__setitem__("defaultPrompt", "one prompt"), "starter prompts"),
+            (lambda d: listing(d).__setitem__("defaultPrompt", [["nested"]]), "starter prompts"),
+            (lambda d: d["extensions"]["com.openai"].__setitem__("review", []), "positive test cases"),
+            (lambda d: d["extensions"]["com.openai"]["review"]["test_cases"].__setitem__("negative", ["text"]), "negative test cases"),
         )
         for change, message in cases:
             with self.subTest(message=message):
