@@ -9,27 +9,30 @@ Write the test that describes the behavior, watch it fail for the right reason,
 make it pass with the simplest change, then clean up. Repeat in small steps.
 
 Use the bundled `ditto-memory` skill for connection, recall and capture rules.
+If this host gives you a local shell and a repository you can run, also read
+[coding-agent.md](references/coding-agent.md). In a chat app, skip it: give the
+user the test first and ask for the runner's red output, then the code and its
+green output.
 
 ## Before starting
 
 Search Ditto for the project's testing conventions: the test runner and command,
-fixture and mocking habits, and known traps. Then confirm them against the
-repository itself; the repository wins when they disagree. Find the existing
-test closest to what you are about to write and follow its shape.
+fixture and mocking habits, and known traps. When the user shares an existing
+test close to what you are about to write, follow its shape. Ask for one if the
+project's conventions are unknown.
 
 ## The loop
 
 1. **Red.** Write one test for one behavior, named for the behavior rather than
-   the implementation. Run it and read the failure. It must fail because the
-   behavior is missing, not because of a typo, an import error or a broken
-   fixture.
-2. **Green.** Make the smallest change that passes. Run the whole relevant suite,
-   not only the new test.
-3. **Refactor.** Remove duplication and improve names with the tests green.
-   Run them again after each change.
+   the implementation. It must fail because the behavior is missing, not because
+   of a typo, an import error or a broken fixture; read the failure to check.
+2. **Green.** Make the smallest change that passes, then run the whole relevant
+   suite, not only the new test.
+3. **Refactor.** Remove duplication and improve names with the tests green, and
+   run them again after each change.
 
-Keep steps small enough that a failure points at the last change. Commit at
-green when the user wants commits.
+Keep steps small enough that a failure points at the last change. Never claim a
+test went red or green unless you or the user actually saw that result.
 
 ## Tests that can fail
 

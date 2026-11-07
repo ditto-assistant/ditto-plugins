@@ -1,6 +1,7 @@
 # Owned workspace and build cleanup
 
-Use this only with actual local inspection capabilities. A browser file upload
+Reached from [coding-agent.md](coding-agent.md). Use this only with actual local
+inspection capabilities. A browser file upload
 or cloud sandbox does not grant access to the user's Mac. Never substitute host
 transcript databases, plugin caches or arbitrary directories for an owned task
 workspace. Do not run a global cleanup sweep as a side effect of handoff.
