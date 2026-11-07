@@ -9,6 +9,11 @@ Write the test that describes the behavior, watch it fail for the right reason,
 make it pass with the simplest change, then clean up. Repeat in small steps.
 
 Use the bundled `ditto-memory` skill for connection, recall and capture rules.
+This skill describes work the host may perform in a user's repository. Running
+tests requires a separately available, authorized host execution tool; the
+Ditto plugin bundles no executable code or test runner, and its declared MCP
+server is used only for memory. If the host lacks execution access, describe
+the tests to run and leave their result unverified.
 
 ## Before starting
 

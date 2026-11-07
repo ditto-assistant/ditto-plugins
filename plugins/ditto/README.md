@@ -51,6 +51,27 @@ come first, browser/computer controls next, and web search last for recordings,
 official links and an ordered plan. Saving playlists or changing playback requires
 separate music capabilities; confirm the actual result before claiming success.
 
+## Other services and host capabilities
+
+The Ditto MCP server supplies memory access. Skills may also use separately
+connected services or host tools when available and authorized:
+
+- Music accounts: Spotify, Apple Music, YouTube Music, Tidal, Deezer, Amazon
+  Music, SoundCloud, or another service the user selects. The music skill may
+  read a saved library and, with separate capability, create playlists or control
+  playback.
+- Web search for current public facts, sources, travel and meal planning, and
+  music links; browser or computer control for music sites and other user
+  requested UI work.
+- Connected calendars, task lists, and user named research sources for briefs,
+  meetings, and daily planning. Connected shopping, booking, publishing, and
+  messaging services are used only for the corresponding user requested action.
+- Host repository, test runner, filesystem, and chat archive controls for
+  engineering and handoff skills, subject to the host's grants and user approval.
+
+These are host capabilities, not servers or credentials bundled with this plugin.
+Availability depends on the host and the user's connections.
+
 Try: "Curate a playlist on my preferred music service using my Ditto memories for
 a relaxed evening, with a few discoveries."
 
