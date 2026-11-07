@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "ditto",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Ditto memory for everyday life, business and engineering: recall and save memories, keep decisions and meetings, plan weeks, trips and meals, debug, test and review code, and hand off chats.",
   "extensions": {
     "com.openai": {
