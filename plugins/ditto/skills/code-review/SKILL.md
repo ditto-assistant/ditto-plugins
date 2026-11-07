@@ -9,15 +9,20 @@ Find the problems that would hurt users or maintainers, and say each one so the
 author can act on it. Correctness first, clarity second, style last.
 
 Use the bundled `ditto-memory` skill for connection, recall and capture rules.
+If this host gives you a local shell and the change is in a repository you can
+open, also read [coding-agent.md](references/coding-agent.md). In a chat app,
+skip it and review what the user shares.
 
 ## Gather context
 
-Read the full diff and enough surrounding code to understand each change. Read
-the description or linked issue to learn the intent. Search Ditto for the team's
-review conventions, past review decisions about this area and known pitfalls; a
-convention the team agreed on outranks your personal preference. Compare against
-the branch the change will merge into, not an older one, or you will review
-someone else's work.
+Review the diff the user pasted, uploaded or linked through a connected tool,
+with as much surrounding code as you can see. Read the description or linked
+issue to learn the intent. Search Ditto for the team's review conventions, past
+review decisions about this area and known pitfalls; a convention the team
+agreed on outranks your personal preference. If a finding depends on code you
+cannot see, ask for that file or mark the finding as a question rather than
+guessing. Say whether each issue is new in this change or already in the code it
+modifies; when the shared context cannot tell, say so.
 
 ## Review in passes
 
@@ -34,8 +39,7 @@ someone else's work.
 
 For each candidate finding, trace the actual code path and try to construct the
 failing input. Drop findings you cannot support. Mark a finding as a question
-when you are unsure. Check whether an issue is new in this change or already on
-the base branch, and say which.
+when you are unsure.
 
 ## Report
 

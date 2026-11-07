@@ -19,8 +19,11 @@ identified fresh UI control if one exists. If it does not, retain the verified
 memory and report manual closeout; do not equate exiting Code, deleting a chat
 or removing a transcript file with archival.
 
-Chat without authorized local tools cannot measure or clean the Mac. Code/Cowork
-local capabilities depend on actual grants. Follow the bundled cleanup reference:
-inventory owned paths, verify pushed code/PR state and unique/ignored file recovery,
-keep active/shared/pinned work safe, and require exact cleanup authorization.
-No hooks, automatic capture, new MCP tools or public tool grants are added.
+In Chat and Cowork the handoff is four steps: write the note, save it, read it
+back, and archive the chat or say how to. It does not inspect tools, files, disk,
+git or processes. Claude Code (or another coding agent with a local workspace)
+also reads the skill's `references/coding-agent.md`: it records repository,
+branch and commit state, makes code recoverable, and follows the bundled cleanup
+reference only with exact cleanup authorization, keeping active, shared and
+pinned work safe. No hooks, automatic capture, new MCP tools or public tool
+grants are added.

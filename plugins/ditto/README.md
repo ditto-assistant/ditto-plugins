@@ -56,10 +56,16 @@ a relaxed evening, with a few discoveries."
 
 Use `/handoff` for verified private
 continuation notes and supported host archival, including explicitly selected
-bulk closeout. Disk assessment requires local tools; cleanup requires exact
-authority and verified code/file recovery. A memory summary is not a file backup.
-If this host cannot archive, the skill saves the handoff and explains the manual
-closeout step. Exiting a CLI session is not an archive operation.
+bulk closeout. In a chat app it only writes the note, saves it, reads it back
+and closes the chat. Coding agents with a local workspace also make code
+recoverable and, with exact authority, clean up their own files; those steps
+live in the skill's `references/coding-agent.md`. A memory summary is not a file
+backup. If this host cannot archive, the skill saves the handoff and explains the
+manual closeout step. Exiting a CLI session is not an archive operation.
+
+Every skill works in a chat app. Steps that need a shell, such as git, test
+runners, disk checks and deploy probes, sit in a skill's
+`references/coding-agent.md`, which chat hosts skip.
 
 The plugin respects your current instructions, private capture preferences,
 source authorship and actual tool grants. The plugin does not automatically save

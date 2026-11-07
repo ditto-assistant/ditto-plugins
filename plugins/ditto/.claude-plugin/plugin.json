@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
   "name": "ditto",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Ditto memory through hosted MCP, with 20 skills for life, business and engineering: recall and save context, keep decisions, meetings and weekly reviews, debug, test and review code, plan days, trips and meals, curate music, and hand off chats. Archival and owned workspace cleanup depend on host capabilities and authorization. Sign in through Claude.",
   "author": {
     "name": "Omni Aura LLC",
