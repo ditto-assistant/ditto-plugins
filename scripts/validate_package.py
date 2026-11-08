@@ -97,8 +97,9 @@ def check_mcp_file(path, plugin):
 
 
 def check_manifest(host, manifest, plugin, folder):
-    if manifest.get("name") != plugin:
-        raise ValueError(f"{host} manifest name must be {plugin}")
+    expected_name = "heyditto" if host == "claude" and plugin == "ditto" else plugin
+    if manifest.get("name") != expected_name:
+        raise ValueError(f"{host} manifest name must be {expected_name}")
     if RUNTIME & manifest.keys():
         raise ValueError(f"Unexpected runtime component in MCP-only {host} manifest")
     mcp = manifest.get("mcpServers")
