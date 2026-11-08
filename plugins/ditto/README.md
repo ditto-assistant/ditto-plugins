@@ -90,9 +90,12 @@ runners, disk checks and deploy probes, sit in a skill's
 
 The plugin respects your current instructions, private capture preferences,
 source authorship and actual tool grants. The plugin does not automatically save
-transcripts or inject context at every prompt. Native chat listing/sending and
-music-account access are not supplied by this package. UI support depends on the
-actual host. Installation alone does not prove authenticated tool execution.
+transcripts or inject context at every prompt. When exposed by the live MCP tool
+list and authorized for the account, Ditto agent tools can list agents, read their
+threads and send an agent a message; they do not provide arbitrary connected-chat
+listing or full native chat history. Music-account access is not supplied by this
+package. UI support depends on the actual host. Installation alone does not prove
+authenticated tool execution.
 
 Upgrading from 0.2.x removes the old plugin's CLI hooks and commands. Previously
 installed CLI software, credentials, agent accounts and saved memories remain;
