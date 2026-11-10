@@ -7,8 +7,10 @@ unchanged sculptural-D app icon from brand-kit tag `v2026.09.10`
 MCP configuration and bundled skill bytes match the tested 0.3.0 release. Directory
 validation reads the exact submitted commit separately from local validation.
 
-The release contains hosted MCP connection metadata and shared skills. It does
-not distribute or refresh a CLI, run hooks or provision agent accounts.
+The release contains hosted MCP connection metadata, shared skills and Claude Code
+lifecycle hooks that print local reminders (see [docs/hooks.md](docs/hooks.md)). It
+does not distribute or refresh a CLI, call Ditto from a hook or provision agent
+accounts. A hook change also updates its SHA-256 in `scripts/hook-allowlist.json`.
 
 1. Change host manifests, MCP configuration or the host adapter here. Change common skills
    in `ditto-assistant/ditto-skills`; regenerate using its clean committed source.

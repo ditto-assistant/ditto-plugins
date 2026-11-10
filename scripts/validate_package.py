@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check the MCP-only, multi-host plugin release boundary without connecting an account.
+"""Check the hosted-MCP, multi-host plugin release boundary without connecting an account.
 
 `--archive <zip outside the repository>` also writes and byte-verifies the ChatGPT
 directory upload: plugins/ditto/.openai-plugin/plugin.json as ditto/plugin.json,
@@ -7,10 +7,14 @@ with mcp.json, README, assets and skills.
 
 Every root marketplace must list the same plugins. Each plugin lives in
 plugins/<name>/ with one manifest per host, one shared skills/ folder and
-hosted-MCP configuration only: no launchers, credentials, hooks, commands or
-agents.
+hosted-MCP configuration only: no launchers, credentials, commands or agents.
+Lifecycle hooks are the one runtime exception: only files byte-pinned in
+scripts/hook-allowlist.json, wired through a host's own manifest (never the
+hooks/hooks.json default that several hosts discover by themselves), run local
+commands with a timeout and call nothing over the network.
 """
 import argparse
+import hashlib
 import json
 import re
 import zipfile
@@ -57,6 +61,17 @@ TEXT = {".md", ".json", ".yaml", ".yml", ".txt"}
 ASSETS = {".png", ".svg"}
 SERVER_KEYS = {"type", "transport", "url", "serverUrl"}
 REPOSITORY = "https://github.com/ditto-assistant/ditto-plugins"
+# Hook files (plugin-relative path -> SHA-256) a plugin may ship. Changing a hook
+# means changing its pinned hash here, in the same reviewed PR.
+HOOK_ALLOWLIST = "scripts/hook-allowlist.json"
+# The hook configuration each host's manifest may point at. Claude Code, Cursor
+# and Codex all discover hooks/hooks.json without a manifest field, so a shared
+# default file would run Claude-format hooks on hosts that never opted in.
+HOST_HOOKS = {"claude": "./hooks/claude-hooks.json"}
+HOOK_EVENTS = {"SessionStart": {None, "startup|resume|clear", "compact"}, "PreCompact": {None}, "Stop": {None}}
+HOOK_COMMAND = re.compile(r'sh "\$\{CLAUDE_PLUGIN_ROOT\}/hooks/ditto-hook\.sh" (session-start|compact|pre-compact|stop)')
+MAX_HOOK_TIMEOUT = 10  # seconds
+NETWORK = re.compile(rb"curl|wget|\bnc\b|ssh|/dev/(tcp|udp)|https?://|\b(node|python3?|perl|ruby|osascript|powershell)\b")
 
 
 def load(path):
@@ -100,7 +115,11 @@ def check_manifest(host, manifest, plugin, folder):
     expected_name = "heyditto" if host == "claude" and plugin == "ditto" else plugin
     if manifest.get("name") != expected_name:
         raise ValueError(f"{host} manifest name must be {expected_name}")
-    if RUNTIME & manifest.keys():
+    if "hooks" in manifest:
+        if manifest["hooks"] != HOST_HOOKS.get(host):
+            raise ValueError(f"{host} manifest may not declare hooks other than {HOST_HOOKS.get(host)}")
+        check_hook_config(folder / manifest["hooks"])
+    if RUNTIME - {"hooks"} & manifest.keys():
         raise ValueError(f"Unexpected runtime component in MCP-only {host} manifest")
     mcp = manifest.get("mcpServers")
     if host == "claude" and mcp is not None:
@@ -153,6 +172,50 @@ def check_manifest(host, manifest, plugin, folder):
             raise ValueError(f"{host} manifest must use the shared skills folder")
 
 
+def hook_allowlist(root):
+    path = Path(root) / HOOK_ALLOWLIST
+    allowed = load(path) if path.is_file() else {}
+    if not isinstance(allowed, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in allowed.items()):
+        raise ValueError(f"{HOOK_ALLOWLIST} maps plugins/<name>/hooks/<file> to its SHA-256")
+    return allowed
+
+
+def check_hook_file(root, folder, item, allowed):
+    """A hook file ships only if its exact bytes are pinned and it reaches no network."""
+    relative = item.relative_to(root).as_posix()
+    data = item.read_bytes()
+    if item.relative_to(folder).as_posix() == "hooks/hooks.json":
+        raise ValueError("hooks/hooks.json is auto-discovered by several hosts; wire hooks through a host manifest")
+    if allowed.get(relative) != hashlib.sha256(data).hexdigest():
+        raise ValueError(f"Unlisted or changed hook file: {relative} (pin its SHA-256 in {HOOK_ALLOWLIST})")
+    if NETWORK.search(data):
+        raise ValueError(f"Hook file reaches for a network tool or interpreter: {relative}")
+
+
+def check_hook_config(path):
+    """Command hooks on known events only, each invoking the bundled script with a short timeout."""
+    if not path.is_file():
+        raise ValueError(f"Missing hook configuration {path.name}")
+    config = load(path)
+    events = config.get("hooks") if isinstance(config, dict) and not set(config) - {"description", "hooks"} else None
+    if not isinstance(events, dict) or not events:
+        raise ValueError("Hook configuration must be {\"description\", \"hooks\": {event: [...]}}")
+    for event, groups in events.items():
+        if event not in HOOK_EVENTS or not isinstance(groups, list):
+            raise ValueError(f"Hook event not allowed: {event}")
+        for group in groups:
+            if not isinstance(group, dict) or set(group) - {"matcher", "hooks"} or group.get("matcher") not in HOOK_EVENTS[event]:
+                raise ValueError(f"Hook matcher not allowed on {event}")
+            for handler in group.get("hooks") or [None]:
+                if not isinstance(handler, dict) or set(handler) != {"type", "command", "timeout"} or handler["type"] != "command":
+                    raise ValueError(f"{event} hooks must be command handlers with only type, command and timeout")
+                if not HOOK_COMMAND.fullmatch(handler["command"]):
+                    raise ValueError(f"{event} hook must invoke the bundled ditto-hook.sh")
+                timeout = handler["timeout"]
+                if not isinstance(timeout, int) or isinstance(timeout, bool) or not 1 <= timeout <= MAX_HOOK_TIMEOUT:
+                    raise ValueError(f"{event} hook timeout must be 1-{MAX_HOOK_TIMEOUT} seconds")
+
+
 def check_root_manifest(root, relative, host, plugin):
     """A root manifest is the plugin's own host manifest with paths rebased into plugins/<name>."""
     path = root / relative
@@ -191,6 +254,7 @@ def validate(root):
     if on_disk != lists["claude"]:
         raise ValueError("Every plugins/<name> folder must be listed in every marketplace")
     count = 0
+    allowed = hook_allowlist(root)
     for plugin in lists["claude"]:
         folder = root / "plugins" / plugin
         versions = set()
@@ -214,6 +278,11 @@ def validate(root):
                 continue
             count += 1
             relative = item.relative_to(folder)
+            if item.stat().st_mode & 0o111:
+                raise ValueError(f"Executable release file: {relative}")
+            if relative.parts[0] == "hooks":
+                check_hook_file(root, folder, item, allowed)
+                continue
             ok = (relative.as_posix() in ALLOWED_FILES
                   or (relative.parts[0] == "skills" and item.suffix in TEXT)
                   or (relative.parts[0] == "assets" and len(relative.parts) == 2 and item.suffix in ASSETS))
@@ -221,6 +290,9 @@ def validate(root):
                 raise ValueError(f"Unexpected release file: {relative}")
         if not any((folder / "skills").glob("*/SKILL.md")):
             raise ValueError(f"{plugin} ships no skills")
+    for relative in allowed:
+        if not (root / relative).is_file():
+            raise ValueError(f"{HOOK_ALLOWLIST} lists a missing file: {relative}")
     for relative, (host, plugin) in ROOT_MANIFESTS.items():
         check_root_manifest(root, relative, host, plugin)
     for name in ("ditto-memory", "curate-music", "handoff"):
@@ -259,7 +331,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--archive", type=Path, help="write the ChatGPT directory upload ZIP here (outside the repository)")
     args = parser.parse_args()
-    print(f"MCP-only multi-host package verified: {validate(ROOT)} files")
+    print(f"Hosted-MCP multi-host package verified: {validate(ROOT)} files, {len(hook_allowlist(ROOT))} pinned hook files")
     if args.archive:
         path, count = archive(ROOT, args.archive)
         print(f"ChatGPT upload verified: {path} ({count} files). Host behavior and submission readiness remain unverified.")

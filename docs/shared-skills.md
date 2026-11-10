@@ -1,6 +1,6 @@
 # Shared skill releases
 
-The common memory and music-curation workflows come from the private `ditto-assistant/ditto-skills` source repo. Edit common behavior there. Edit this repository's `adapters/ditto-memory.md` for host-specific guidance (one labelled section per host, because every host reads the same generated skill); MCP configuration and host-managed sign-in guidance remain owned here. This MCP-only package ships no CLI helpers, lifecycle hooks or shell commands.
+The common memory and music-curation workflows come from the private `ditto-assistant/ditto-skills` source repo. Edit common behavior there. Edit this repository's `adapters/ditto-memory.md` for host-specific guidance (one labelled section per host, because every host reads the same generated skill); MCP configuration and host-managed sign-in guidance remain owned here. This hosted-MCP package ships no CLI helpers or shell commands; its only runtime files are the hash-pinned Claude Code lifecycle hooks described in [hooks.md](hooks.md).
 
 The generated SKILL.md, offline verifier and shared-skills.lock.json are materialized files, not symlinks. The lock records the immutable source revision and content hashes. Run `python3 scripts/shared_skills.py verify --host plugins --repo .` without private repo access. A maintainer with a clean source clone can run its generator with `build --source <clone> --repo . --host plugins --bump-version`.
 

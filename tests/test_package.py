@@ -19,6 +19,8 @@ class MCPReleaseTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         for folder in ("plugins", ".claude-plugin", ".cursor-plugin", ".grok-plugin", ".agents", ".github/plugin", ".kimi-plugin"):
             shutil.copytree(ROOT / folder, self.root / folder)
+        (self.root / "scripts").mkdir()
+        shutil.copy(ROOT / package.HOOK_ALLOWLIST, self.root / package.HOOK_ALLOWLIST)
 
     def edit(self, relative, change):
         f = self.root / relative
@@ -31,9 +33,9 @@ class MCPReleaseTests(unittest.TestCase):
 
     def test_cli_hook_cannot_return_through_default_scan(self):
         hook = self.root / "plugins/ditto/hooks/hooks.json"
-        hook.parent.mkdir()
+        hook.parent.mkdir(exist_ok=True)
         hook.write_text('{"hooks":{}}')
-        with self.assertRaisesRegex(ValueError, "Unexpected release file"):
+        with self.assertRaisesRegex(ValueError, "auto-discovered by several hosts"):
             package.validate(self.root)
 
     def test_marketplace_cannot_override_mcp_runtime(self):
@@ -168,7 +170,7 @@ class MCPReleaseTests(unittest.TestCase):
             package.archive(self.root, self.root / "ditto.zip")
 
     def test_runtime_directories_are_not_release_files(self):
-        for folder in ("commands", "hooks", "policies", "agents"):
+        for folder in ("commands", "policies", "agents"):
             with self.subTest(folder=folder):
                 self.setUp()
                 extra = self.root / "plugins/ditto" / folder / "x.toml"
@@ -200,6 +202,9 @@ class MCPReleaseTests(unittest.TestCase):
 
     def test_new_plugin_must_be_listed_in_every_marketplace(self):
         shutil.copytree(self.root / "plugins/ditto", self.root / "plugins/ditto-extra")
+        # Hooks are pinned per plugin path; a new plugin starts without them.
+        shutil.rmtree(self.root / "plugins/ditto-extra/hooks")
+        self.edit("plugins/ditto-extra/.claude-plugin/plugin.json", lambda d: d.pop("hooks"))
         for relative in package.MANIFESTS.values():
             self.edit(f"plugins/ditto-extra/{relative}", lambda d: d.__setitem__("name", "ditto-extra"))
         for relative in ("plugins/ditto-extra/.mcp.json", "plugins/ditto-extra/mcp.json", "plugins/ditto-extra/mcp_config.json"):

@@ -1,0 +1,49 @@
+{
+  "description": "Ditto memory reminders: recall at session start, keep Ditto references through compaction, one end-of-task save check. Local only; DITTO_HOOKS=0 turns them off.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/ditto-hook.sh\" session-start",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/ditto-hook.sh\" compact",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/ditto-hook.sh\" pre-compact",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/ditto-hook.sh\" stop",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

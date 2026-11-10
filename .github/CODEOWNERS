@@ -1,0 +1,5 @@
+# Everything here runs on users' machines or decides what does (DITTO-1931, DITTO-2706).
+/plugins/*/hooks/            @Peyton-Spencer @omarzanji
+/scripts/hook-allowlist.json @Peyton-Spencer @omarzanji
+/scripts/validate_package.py @Peyton-Spencer @omarzanji
+/.github/                    @Peyton-Spencer @omarzanji

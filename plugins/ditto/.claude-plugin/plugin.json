@@ -19,6 +19,7 @@
     "knowledge-graph",
     "mcp"
   ],
+  "hooks": "./hooks/claude-hooks.json",
   "displayName": "Ditto",
   "icon": "./assets/icon.png",
   "documentationUrl": "https://github.com/ditto-assistant/ditto-plugins/blob/main/plugins/ditto/README.md",
