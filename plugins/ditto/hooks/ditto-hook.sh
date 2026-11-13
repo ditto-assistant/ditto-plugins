@@ -35,7 +35,7 @@ if [ "$event" = connected ]; then
   mkdir -p "$data" 2>/dev/null && touch "$data/connected" 2>/dev/null
   exit 0
 fi
-find "$data" -maxdepth 1 -name connected -mtime +30 -exec rm -f {} + 2>/dev/null
+find "$data" -maxdepth 1 -name connected -mtime +29 -exec rm -f {} + 2>/dev/null
 [ -e "$data/connected" ] || exit 0
 
 field() {

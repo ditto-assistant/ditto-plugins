@@ -248,12 +248,13 @@ class HookScriptTests(unittest.TestCase):
 
     def test_connected_lapses_after_30_days_without_a_ditto_call(self):
         self.worked()
-        self.age("connected", days=31)
+        # find rounds ages down to whole days: +29 matches from exactly 30 days on.
+        self.age("connected", days=30.01)
         self.assertEqual(self.run_hook("session-start"), "")
         self.assertFalse((self.data / "connected").exists())
         self.run_hook("connected")
         self.assertIn("ditto-memory", self.run_hook("session-start"))
-        self.age("connected", days=29)
+        self.age("connected", days=29.9)
         self.assertIn("ditto-memory", self.run_hook("session-start"))
         self.asked(self.run_hook("stop"))
 
