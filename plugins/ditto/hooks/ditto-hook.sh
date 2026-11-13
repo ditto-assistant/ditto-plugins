@@ -28,13 +28,15 @@ data="${CLAUDE_PLUGIN_DATA:-}"
 input=$(cat 2>/dev/null) || exit 0
 
 if [ "$event" = connected ]; then
+  # An MCP error result does not show that Ditto works.
+  printf '%s' "$input" | grep -Eq '"(isError|is_error)"[[:space:]]*:[[:space:]]*true' && exit 0
   mkdir -p "$data" 2>/dev/null && touch "$data/connected" 2>/dev/null
   exit 0
 fi
 [ -e "$data/connected" ] || exit 0
 
 field() {
-  printf '%s' "$input" | tr -d '\n' | sed -n "s/.*\"$1\" *: *\"\\([^\"]*\\)\".*/\\1/p" | sed 's/\\\\/\\/g; s/\\\//\//g'
+  printf '%s' "$input" | tr -d '\n' | sed -n "s/.*\"$1\" *: *\"\\([^\"]*\\)\".*/\\1/p" | sed 's/\\\(.\)/\1/g'
 }
 
 # Nobody is there to answer in claude -p, the Agent SDK or a scheduled run.
@@ -84,11 +86,14 @@ stop)
     count=$(calls '[^"]*' | wc -l | tr -d ' ')
     [ "${count:-0}" -ge 10 ] || exit 0
   fi
-  touch "$marker" 2>/dev/null || exit 0
+  # Write the marker after the reminder, so an interrupted run cannot suppress one
+  # that was never shown; an unwritable data dir would repeat it, so check first.
+  [ -w "$data" ] || exit 0
   find "$data" -maxdepth 1 -name 'stop-check-*' -mtime +30 -exec rm -f {} + 2>/dev/null
   cat <<'EOF'
 {"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":"Ditto end-of-task check (once per session). If this session produced durable outcomes the user would want remembered (decisions, results, owners, next steps) and the user has authorized Ditto capture, save one concise note through the ditto-memory skill: search for an existing record first, no transcript, no credentials, and confirm the save. If capture has not been authorized, offer it in one sentence. If nothing durable happened or the Ditto server is not connected, end the turn with one short line saying so."}}
 EOF
+  touch "$marker" 2>/dev/null
   ;;
 esac
 )

@@ -65,6 +65,12 @@ class HookPackageTests(unittest.TestCase):
                 (self.root / PLUGIN / "hooks" / name).write_bytes(content())
                 with self.assertRaisesRegex(ValueError, "Unlisted or changed hook file"):
                     package.validate(self.root)
+        for relative in (f"{PLUGIN}/README.md", package.HOOK_ALLOWLIST, f"{PLUGIN}/hooks/../README.md"):
+            with self.subTest(relative=relative):
+                self.setUp()
+                self.edit(package.HOOK_ALLOWLIST, lambda d: d.__setitem__(relative, "0" * 64))
+                with self.assertRaisesRegex(ValueError, "must map plugins/<name>/hooks/<file>"):
+                    package.validate(self.root)
         self.setUp()
         self.edit(package.HOOK_ALLOWLIST, lambda d: d.__setitem__(f"{PLUGIN}/hooks/gone.sh", "0" * 64))
         with self.assertRaisesRegex(ValueError, "lists a missing file"):
@@ -106,6 +112,8 @@ class HookPackageTests(unittest.TestCase):
             (".grok-plugin/plugin.json", "./hooks/claude-hooks.json"),
             (".claude-plugin/plugin.json", "./hooks/other.json"),
             (".claude-plugin/plugin.json", {"Stop": []}),
+            (".cursor-plugin/plugin.json", None),
+            (".claude-plugin/plugin.json", None),
         )
         for manifest, value in cases:
             with self.subTest(manifest=manifest, value=value):
@@ -136,6 +144,7 @@ class HookPackageTests(unittest.TestCase):
             (lambda d: handler(d).__setitem__("command", 'sh "${CLAUDE_PLUGIN_ROOT}/hooks/ditto-hook.sh" stop; curl x'), "bundled ditto-hook.sh"),
             (lambda d: handler(d).__setitem__("command", 'bash -c "curl example.com"'), "bundled ditto-hook.sh"),
             (lambda d: d.__setitem__("extra", 1), "description"),
+            (lambda d: handler(d).__setitem__("command", ["sh", "x"]), "bundled ditto-hook.sh"),
         )
         for change, message in cases:
             with self.subTest(message=message):
@@ -230,6 +239,15 @@ class HookScriptTests(unittest.TestCase):
         self.assertIn("ditto-memory", self.run_hook("session-start"))
         self.asked(self.run_hook("stop"))
 
+    def test_error_results_do_not_mark_connected(self):
+        (self.data / "connected").unlink()
+        for response in ({"isError": True, "content": []}, {"is_error": True}):
+            with self.subTest(response=response):
+                self.assertEqual(self.run_hook("connected", {"hook_event_name": "PostToolUse", "tool_response": response}), "")
+                self.assertFalse((self.data / "connected").exists())
+        self.run_hook("connected", {"hook_event_name": "PostToolUse", "tool_response": {"isError": False, "content": []}})
+        self.assertTrue((self.data / "connected").exists())
+
     def test_connected_creates_the_data_dir_and_fails_open(self):
         shutil.rmtree(self.data)
         self.assertEqual(self.run_hook("connected"), "")
@@ -321,6 +339,12 @@ class HookScriptTests(unittest.TestCase):
             with self.subTest(label):
                 self.assertEqual(self.run_hook("bogus" if label == "unknown event" else "stop", **kwargs), "")
 
+    def test_marker_is_written_after_the_reminder(self):
+        script = SCRIPT.read_text()
+        reminder = script.index('"additionalContext":"Ditto end-of-task check')
+        self.assertGreater(script.index('touch "$marker"'), reminder)
+        self.assertLess(script.index('[ -w "$data" ] || exit 0'), reminder)
+
     @unittest.skipIf(os.geteuid() == 0, "root ignores directory permissions")
     def test_read_only_data_dir_fails_open_quietly(self):
         self.worked()
@@ -336,11 +360,13 @@ class HookScriptTests(unittest.TestCase):
         self.worked()
         # A quoted path is not parsed (fail open); a backslash path is unescaped.
         self.assertEqual(self.run_hook("stop"), "")
-        plain = self.tmp / "back\\slash"
-        plain.mkdir()
-        self.transcript = plain / "session.jsonl"
-        self.worked()
-        self.asked(self.run_hook("stop"))
+        for name in ("back\\slash", "trailing\\"):
+            with self.subTest(name=name):
+                folder = self.tmp / name
+                folder.mkdir()
+                self.transcript = folder / "session.jsonl"
+                self.worked()
+                self.asked(self.run_hook("stop", {"session_id": "s-" + str(len(name))}))
 
 
 if __name__ == "__main__":

@@ -119,7 +119,7 @@ def check_manifest(host, manifest, plugin, folder):
     if manifest.get("name") != expected_name:
         raise ValueError(f"{host} manifest name must be {expected_name}")
     if "hooks" in manifest:
-        if manifest["hooks"] != HOST_HOOKS.get(host):
+        if not isinstance(manifest["hooks"], str) or manifest["hooks"] != HOST_HOOKS.get(host):
             raise ValueError(f"{host} manifest may not declare hooks other than {HOST_HOOKS.get(host)}")
         check_hook_config(folder / manifest["hooks"])
     if RUNTIME - {"hooks"} & manifest.keys():
@@ -212,7 +212,7 @@ def check_hook_config(path):
             for handler in group.get("hooks") or [None]:
                 if not isinstance(handler, dict) or set(handler) != {"type", "command", "timeout"} or handler["type"] != "command":
                     raise ValueError(f"{event} hooks must be command handlers with only type, command and timeout")
-                if not HOOK_COMMAND.fullmatch(handler["command"]):
+                if not isinstance(handler["command"], str) or not HOOK_COMMAND.fullmatch(handler["command"]):
                     raise ValueError(f"{event} hook must invoke the bundled ditto-hook.sh")
                 timeout = handler["timeout"]
                 if not isinstance(timeout, int) or isinstance(timeout, bool) or not 1 <= timeout <= MAX_HOOK_TIMEOUT:
@@ -294,6 +294,8 @@ def validate(root):
         if not any((folder / "skills").glob("*/SKILL.md")):
             raise ValueError(f"{plugin} ships no skills")
     for relative in allowed:
+        if not re.fullmatch(r"plugins/[a-z0-9]+(?:-[a-z0-9]+)*/hooks/[^/]+", relative):
+            raise ValueError(f"{HOOK_ALLOWLIST} must map plugins/<name>/hooks/<file>: {relative}")
         if not (root / relative).is_file():
             raise ValueError(f"{HOOK_ALLOWLIST} lists a missing file: {relative}")
     for relative, (host, plugin) in ROOT_MANIFESTS.items():
