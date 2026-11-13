@@ -68,8 +68,11 @@ HOOK_ALLOWLIST = "scripts/hook-allowlist.json"
 # and Codex all discover hooks/hooks.json without a manifest field, so a shared
 # default file would run Claude-format hooks on hosts that never opted in.
 HOST_HOOKS = {"claude": "./hooks/claude-hooks.json"}
-HOOK_EVENTS = {"SessionStart": {None, "startup|resume|clear", "compact"}, "PreCompact": {None}, "Stop": {None}}
-HOOK_COMMAND = re.compile(r'sh "\$\{CLAUDE_PLUGIN_ROOT\}/hooks/ditto-hook\.sh" (session-start|compact|pre-compact|stop)')
+# PostToolUse is allowed only with a matcher that selects Ditto's own memory tools,
+# so the host never starts the script on an ordinary tool call.
+DITTO_MEMORY_TOOLS = "mcp__.*ditto.*__(search_memories|fetch_memories|save_memory|update_memory|aggregate_memories)"
+HOOK_EVENTS = {"SessionStart": {None, "startup|resume|clear", "compact"}, "PreCompact": {None}, "Stop": {None}, "PostToolUse": {DITTO_MEMORY_TOOLS}}
+HOOK_COMMAND = re.compile(r'sh "\$\{CLAUDE_PLUGIN_ROOT\}/hooks/ditto-hook\.sh" (connected|session-start|compact|pre-compact|stop)')
 MAX_HOOK_TIMEOUT = 10  # seconds
 NETWORK = re.compile(rb"curl|wget|\bnc\b|ssh|/dev/(tcp|udp)|https?://|\b(node|python3?|perl|ruby|osascript|powershell)\b")
 

@@ -21,6 +21,7 @@ package = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(package)
 
 PLUGIN = "plugins/ditto"
+FIXTURES = ROOT / "tests/fixtures"
 SCRIPT = ROOT / PLUGIN / "hooks/ditto-hook.sh"
 CONFIG = f"{PLUGIN}/hooks/claude-hooks.json"
 
@@ -121,8 +122,11 @@ class HookPackageTests(unittest.TestCase):
         handler = lambda d, event="Stop", i=0: d["hooks"][event][i]["hooks"][0]
         cases = (
             (lambda d: d["hooks"].__setitem__("UserPromptSubmit", d["hooks"]["Stop"]), "event not allowed"),
-            (lambda d: d["hooks"].__setitem__("PostToolUse", d["hooks"]["Stop"]), "event not allowed"),
+            (lambda d: d["hooks"].__setitem__("PreToolUse", d["hooks"]["Stop"]), "event not allowed"),
             (lambda d: d["hooks"]["Stop"][0].__setitem__("matcher", "*"), "matcher not allowed"),
+            # PostToolUse may only fire on Ditto's own memory tools, never on every tool call.
+            (lambda d: d["hooks"]["PostToolUse"][0].__setitem__("matcher", ".*"), "matcher not allowed"),
+            (lambda d: d["hooks"]["PostToolUse"][0].pop("matcher"), "matcher not allowed"),
             (lambda d: handler(d).pop("timeout"), "command handlers"),
             (lambda d: handler(d).__setitem__("timeout", 60), "timeout must be"),
             (lambda d: handler(d).__setitem__("timeout", True), "timeout must be"),
@@ -162,13 +166,20 @@ class HookScriptTests(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.tmp)
         self.data = self.tmp / "data"
         self.transcript = self.tmp / "session.jsonl"
+        # Most tests start where Ditto has already answered once in this install.
+        self.data.mkdir()
+        (self.data / "connected").touch()
+
+    def markers(self):
+        return sorted(p.name for p in self.data.glob("stop-check-*"))
 
     def write_transcript(self, *entries):
         # Hosts write compact JSON Lines, one entry per line.
         self.transcript.write_text("".join(json.dumps(e, separators=(",", ":")) + "\n" for e in entries))
 
     def run_hook(self, event, payload=None, env=None, stdin=None):
-        environment = {"PATH": os.environ["PATH"], "CLAUDE_PLUGIN_DATA": str(self.data), **(env or {})}
+        environment = {"PATH": os.environ["PATH"], "CLAUDE_PLUGIN_DATA": str(self.data), "CLAUDE_CODE_SESSION_ATTENDED": "1", **(env or {})}
+        environment = {k: v for k, v in environment.items() if v is not None}
         if stdin is None:
             stdin = json.dumps({"session_id": "abc-123", "transcript_path": str(self.transcript), "hook_event_name": "Stop", **(payload or {})})
         start = time.monotonic()
@@ -177,6 +188,14 @@ class HookScriptTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stderr, "")
         return result.stdout
+
+    def asked(self, out):
+        """The Stop check continues the turn through additionalContext, not decision:block,
+        which Claude Code's terminal labels "Stop hook error"."""
+        output = json.loads(out)
+        self.assertEqual(set(output), {"hookSpecificOutput"})
+        self.assertEqual(output["hookSpecificOutput"]["hookEventName"], "Stop")
+        return output["hookSpecificOutput"]["additionalContext"]
 
     def worked(self):
         self.write_transcript(entry("user", text="fix the bug"), entry("tool", name="Edit"))
@@ -197,21 +216,60 @@ class HookScriptTests(unittest.TestCase):
                     self.assertEqual(self.run_hook(event, env={"DITTO_HOOKS": value}), "")
         self.assertEqual(self.run_hook("stop", env={"DITTO_HOOKS_STOP": "0"}), "")
         self.assertIn("ditto-memory", self.run_hook("session-start", env={"DITTO_HOOKS_STOP": "0"}))
-        self.assertFalse(self.data.exists(), "an opted-out run leaves nothing behind")
+        self.assertEqual(self.markers(), [], "an opted-out run leaves nothing behind")
+
+    def test_silent_until_a_ditto_memory_tool_has_worked(self):
+        (self.data / "connected").unlink()
+        self.worked()
+        for event in ("session-start", "compact", "pre-compact", "stop"):
+            with self.subTest(event=event):
+                self.assertEqual(self.run_hook(event), "")
+        self.assertEqual(self.markers(), [])
+        self.assertEqual(self.run_hook("connected", {"hook_event_name": "PostToolUse", "tool_name": "mcp__plugin_heyditto_ditto__search_memories"}), "")
+        self.assertTrue((self.data / "connected").exists())
+        self.assertIn("ditto-memory", self.run_hook("session-start"))
+        self.asked(self.run_hook("stop"))
+
+    def test_connected_creates_the_data_dir_and_fails_open(self):
+        shutil.rmtree(self.data)
+        self.assertEqual(self.run_hook("connected"), "")
+        self.assertTrue((self.data / "connected").exists())
+        for env in ({"CLAUDE_PLUGIN_DATA": ""}, {"CLAUDE_PLUGIN_DATA": str(self.transcript / "x")}, {"DITTO_HOOKS": "0", "CLAUDE_PLUGIN_DATA": str(self.tmp / "other")}):
+            with self.subTest(env=env):
+                self.transcript.write_text("")
+                self.assertEqual(self.run_hook("connected", env=env), "")
+        self.assertFalse((self.tmp / "other").exists(), "opted out: no marker")
+
+    def test_stop_skips_unattended_sessions_unless_asked(self):
+        self.worked()
+        quiet = {
+            "claude -p": {"CLAUDE_CODE_SESSION_ATTENDED": "0", "CLAUDE_CODE_ENTRYPOINT": "sdk-cli"},
+            "older host, sdk entrypoint": {"CLAUDE_CODE_SESSION_ATTENDED": None, "CLAUDE_CODE_ENTRYPOINT": "sdk-ts"},
+        }
+        for label, env in quiet.items():
+            with self.subTest(label):
+                self.assertEqual(self.run_hook("stop", {"session_id": label.replace(" ", "-")}, env=env), "")
+                self.assertIn("ditto-memory", self.run_hook("session-start", env=env), "recall still runs at automation start")
+        self.assertEqual(self.markers(), [])
+        forced = {"CLAUDE_CODE_SESSION_ATTENDED": "0", "DITTO_HOOKS_STOP": "1"}
+        self.asked(self.run_hook("stop", {"session_id": "forced"}, env=forced))
+        attended = {"CLAUDE_CODE_SESSION_ATTENDED": "1", "CLAUDE_CODE_ENTRYPOINT": "sdk-cli"}
+        self.asked(self.run_hook("stop", {"session_id": "attended"}, env=attended))
+        legacy = {"CLAUDE_CODE_SESSION_ATTENDED": None, "CLAUDE_CODE_ENTRYPOINT": "cli"}
+        self.asked(self.run_hook("stop", {"session_id": "legacy"}, env=legacy))
 
     def test_stop_asks_once_per_session_after_real_work(self):
         self.worked()
-        decision = json.loads(self.run_hook("stop"))
-        self.assertEqual(decision["decision"], "block")
-        self.assertIn("ditto-memory", decision["reason"])
-        self.assertIn("authorized", decision["reason"])
+        reason = self.asked(self.run_hook("stop"))
+        self.assertIn("ditto-memory", reason)
+        self.assertIn("authorized", reason)
         self.assertEqual(self.run_hook("stop"), "", "second stop in the same session")
-        self.assertEqual(json.loads(self.run_hook("stop", {"session_id": "other-session"}))["decision"], "block")
+        self.asked(self.run_hook("stop", {"session_id": "other-session"}))
 
     def test_stop_never_loops_on_its_own_continuation(self):
         self.worked()
         self.assertEqual(self.run_hook("stop", {"stop_hook_active": True}), "")
-        self.assertFalse(self.data.exists())
+        self.assertEqual(self.markers(), [])
 
     def test_stop_stays_quiet_without_work_or_after_a_save(self):
         cases = {
@@ -227,10 +285,26 @@ class HookScriptTests(unittest.TestCase):
                 self.write_transcript(*entries)
                 self.assertEqual(self.run_hook("stop", {"session_id": label.replace(" ", "-")}), "")
         self.write_transcript(*[entry("tool", name="Bash")] * 10)
-        self.assertEqual(json.loads(self.run_hook("stop", {"session_id": "ten-calls"}))["decision"], "block")
+        self.asked(self.run_hook("stop", {"session_id": "ten-calls"}))
         # A defined-but-unused save tool must not hide real work.
         self.write_transcript(entry("definitions", names=["mcp__plugin_heyditto_ditto__save_memory"]), entry("tool", name="Edit"))
-        self.assertEqual(json.loads(self.run_hook("stop", {"session_id": "save-defined"}))["decision"], "block")
+        self.asked(self.run_hook("stop", {"session_id": "save-defined"}))
+
+    def test_stop_reads_a_real_claude_code_transcript(self):
+        # A Write call as Claude Code 2.1.308 recorded it, keys in their recorded order,
+        # identifying values replaced. If a Claude Code release changes this shape and
+        # the check stops firing, this is the test that should be updated (docs/hooks.md).
+        line = (FIXTURES / "claude-code-2.1.308-write.jsonl").read_text()
+        self.assertIn('"type":"tool_use","id":"toolu_fixture","name":"Write","input":', line)
+        self.transcript.write_text(line)
+        self.asked(self.run_hook("stop"))
+
+    def test_stop_tolerates_reordered_tool_use_keys(self):
+        for block in ({"name": "Edit", "input": {}, "type": "tool_use", "id": "toolu_1"},
+                      {"id": "toolu_1", "type": "tool_use", "name": "Edit", "input": {}}):
+            with self.subTest(order=list(block)):
+                self.transcript.write_text(json.dumps({"type": "assistant", "message": {"content": [block]}}, separators=(",", ":")) + "\n")
+                self.asked(self.run_hook("stop", {"session_id": "-".join(block)}))
 
     def test_stop_fails_open(self):
         self.worked()
@@ -247,6 +321,14 @@ class HookScriptTests(unittest.TestCase):
             with self.subTest(label):
                 self.assertEqual(self.run_hook("bogus" if label == "unknown event" else "stop", **kwargs), "")
 
+    @unittest.skipIf(os.geteuid() == 0, "root ignores directory permissions")
+    def test_read_only_data_dir_fails_open_quietly(self):
+        self.worked()
+        self.data.chmod(0o500)
+        self.addCleanup(self.data.chmod, 0o700)
+        self.assertEqual(self.run_hook("stop"), "")
+        self.assertEqual(self.run_hook("connected"), "")
+
     def test_stop_reads_escaped_paths(self):
         weird = self.tmp / 'dir with "quote" and \\ slash'
         weird.mkdir()
@@ -258,7 +340,7 @@ class HookScriptTests(unittest.TestCase):
         plain.mkdir()
         self.transcript = plain / "session.jsonl"
         self.worked()
-        self.assertEqual(json.loads(self.run_hook("stop"))["decision"], "block")
+        self.asked(self.run_hook("stop"))
 
 
 if __name__ == "__main__":

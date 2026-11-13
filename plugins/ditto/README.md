@@ -59,14 +59,18 @@ with a 5-second timeout and fails open. The script prints fixed reminders and
 makes no network calls; Ditto reads and writes still go through the agent's MCP
 connection.
 
+- **Silent until Ditto works:** nothing is added until a Ditto memory tool has
+  succeeded once in this installation (a `PostToolUse` hook matched only to
+  Ditto's memory tools records that).
 - **Session start:** search Ditto with `ditto-memory` before work that depends on
   the user's history, people, projects or past decisions.
 - **Compaction:** the summary keeps Ditto memory IDs and marks outcomes not yet
   saved. After compaction the agent reuses those IDs and saves what is still
   unsaved, if capture is authorized.
-- **Stop:** once per session, after a file edit or ten tool calls with no Ditto save,
-  the agent saves one concise outcome note if you authorized capture, and otherwise
-  offers to. This costs one short extra turn.
+- **Stop:** once per interactive session, after a file edit or ten tool calls with no
+  Ditto save, the agent saves one concise outcome note if you authorized capture,
+  and otherwise offers to. This costs one short extra turn. Headless runs
+  (`claude -p`, the Agent SDK) skip it unless `DITTO_HOOKS_STOP=1`.
 
 `DITTO_HOOKS=0` turns them all off; `DITTO_HOOKS_STOP=0` turns off only the Stop
 check. Other hosts get no hooks yet. See
