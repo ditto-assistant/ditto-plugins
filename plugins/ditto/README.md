@@ -67,9 +67,9 @@ connection.
 - **Compaction:** the summary keeps Ditto memory IDs and marks outcomes not yet
   saved. After compaction the agent reuses those IDs and saves what is still
   unsaved, if capture is authorized.
-- **Stop:** once per interactive session, after a file edit or ten tool calls with no
-  Ditto save, the agent saves one concise outcome note if you authorized capture,
-  and otherwise offers to. This costs one short extra turn. Headless runs
+- **Stop:** once per interactive session and at most once a day, after a file edit or
+  ten tool calls with no Ditto save, the agent saves one concise outcome note if you
+  authorized capture, and otherwise offers to. This costs one short extra turn. Headless runs
   (`claude -p`, the Agent SDK) skip it unless `DITTO_HOOKS_STOP=1`.
 
 `DITTO_HOOKS=0` turns them all off; `DITTO_HOOKS_STOP=0` turns off only the Stop

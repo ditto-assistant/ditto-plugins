@@ -198,13 +198,20 @@ class HookScriptTests(unittest.TestCase):
         self.assertEqual(result.stderr, "")
         return result.stdout
 
-    def asked(self, out):
+    def asked(self, out, age=True):
         """The Stop check continues the turn through additionalContext, not decision:block,
         which Claude Code's terminal labels "Stop hook error"."""
         output = json.loads(out)
         self.assertEqual(set(output), {"hookSpecificOutput"})
         self.assertEqual(output["hookSpecificOutput"]["hookEventName"], "Stop")
+        if age:
+            self.age("stop-check-*", days=2)  # step past the once-a-day cap for the next case
         return output["hookSpecificOutput"]["additionalContext"]
+
+    def age(self, pattern, days):
+        then = time.time() - days * 86400
+        for path in self.data.glob(pattern):
+            os.utime(path, (then, then))
 
     def worked(self):
         self.write_transcript(entry("user", text="fix the bug"), entry("tool", name="Edit"))
@@ -236,6 +243,17 @@ class HookScriptTests(unittest.TestCase):
         self.assertEqual(self.markers(), [])
         self.assertEqual(self.run_hook("connected", {"hook_event_name": "PostToolUse", "tool_name": "mcp__plugin_heyditto_ditto__search_memories"}), "")
         self.assertTrue((self.data / "connected").exists())
+        self.assertIn("ditto-memory", self.run_hook("session-start"))
+        self.asked(self.run_hook("stop"))
+
+    def test_connected_lapses_after_30_days_without_a_ditto_call(self):
+        self.worked()
+        self.age("connected", days=31)
+        self.assertEqual(self.run_hook("session-start"), "")
+        self.assertFalse((self.data / "connected").exists())
+        self.run_hook("connected")
+        self.assertIn("ditto-memory", self.run_hook("session-start"))
+        self.age("connected", days=29)
         self.assertIn("ditto-memory", self.run_hook("session-start"))
         self.asked(self.run_hook("stop"))
 
@@ -278,11 +296,15 @@ class HookScriptTests(unittest.TestCase):
 
     def test_stop_asks_once_per_session_after_real_work(self):
         self.worked()
-        reason = self.asked(self.run_hook("stop"))
+        reason = self.asked(self.run_hook("stop"), age=False)
         self.assertIn("ditto-memory", reason)
         self.assertIn("authorized", reason)
+        self.assertIn("not already declined", reason)
         self.assertEqual(self.run_hook("stop"), "", "second stop in the same session")
-        self.asked(self.run_hook("stop", {"session_id": "other-session"}))
+        self.assertEqual(self.run_hook("stop", {"session_id": "same-day"}), "", "at most once a day")
+        self.age("stop-check-*", days=2)
+        self.assertEqual(self.run_hook("stop"), "", "the session marker outlives the daily cap")
+        self.asked(self.run_hook("stop", {"session_id": "next-day"}))
 
     def test_stop_never_loops_on_its_own_continuation(self):
         self.worked()

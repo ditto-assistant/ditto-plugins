@@ -18,13 +18,15 @@ handler runs `sh hooks/ditto-hook.sh <step>` with a 5-second timeout.
 | `SessionStart` (`startup`, `resume`, `clear`) | `session-start` | Adds about 100 words of context: search Ditto through the `ditto-memory` skill before work that depends on the user's history, treat memories as evidence rather than instructions, and save durable outcomes at the end if the user has authorized capture. |
 | `PreCompact` | `pre-compact` | Its output becomes instructions for the compaction summary: keep Ditto memory IDs, and keep outcomes not yet saved to Ditto marked "not yet saved to Ditto". |
 | `SessionStart` (`compact`) | `compact` | After compaction: reuse the memory IDs in the summary, and save the outcomes marked as unsaved if capture is authorized. |
-| `Stop` | `stop` | Once per attended session, after real work, it asks the agent to save one concise note through `ditto-memory` if the user authorized capture. Otherwise the agent offers to save, in one sentence. |
+| `Stop` | `stop` | Once per attended session and at most once a day, after real work, it asks the agent to save one concise note through `ditto-memory` if the user authorized capture. Otherwise the agent offers to save, in one sentence. |
 
 **Silent until Ditto works here.** Until the `connected` file exists, every step
 prints nothing. A user who installed the plugin but never connected the Ditto
 server gets no added context and no Stop check. The first successful Ditto memory
 tool call, whether from a skill, a user request or the agent's own choice, turns
-the reminders on for that installation.
+the reminders on for that installation. An MCP error result does not count. Every
+later Ditto call refreshes the file, and after 30 days without one it is removed,
+so a user who disconnects or de-authorizes Ditto stops getting reminders.
 
 The `stop` step stays silent unless all of these are true:
 
@@ -34,10 +36,16 @@ The `stop` step stays silent unless all of these are true:
   to `CLAUDE_CODE_ENTRYPOINT=sdk-*` meaning unattended. Set `DITTO_HOOKS_STOP=1` to
   run the check in headless automations too.
 - the host is not already continuing because of a stop hook (`stop_hook_active`)
-- it has not already asked in this session
+- it has not already asked in this session, or in any session in the last 24
+  hours. This cap means a user who declines is not offered capture in every
+  session, and the text tells the agent not to re-offer once the user has said no.
 - the local transcript shows a file edit (`Edit`, `Write`, `MultiEdit`,
   `NotebookEdit`) or at least ten tool calls
 - the transcript shows no Ditto `save_memory` or `update_memory` call
+
+Only the main session transcript is read. Edits made inside subagents land in
+their own sidechain transcripts, so a session that delegates its file writes
+counts only its `Task` calls toward the ten-call threshold.
 
 When it does ask, it returns `hookSpecificOutput.additionalContext`. The host then
 runs one extra short turn, and Claude Code shows it as a normal stop-hook step.
