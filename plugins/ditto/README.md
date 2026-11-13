@@ -2,7 +2,8 @@
 
 Connect your AI host to your Ditto memory through the hosted MCP server at
 https://api.heyditto.ai/mcp. Sign in through the host's own connection controls;
-never paste API keys into chat. The package includes no CLI helper or lifecycle hooks.
+never paste API keys into chat. The package includes no CLI helper. In Claude Code,
+small local [lifecycle hooks](#lifecycle-hooks) remind the agent to use Ditto memory.
 
 This one folder is a native plugin for each supported host:
 
@@ -51,6 +52,30 @@ come first, browser/computer controls next, and web search last for recordings,
 official links and an ordered plan. Saving playlists or changing playback requires
 separate music capabilities; confirm the actual result before claiming success.
 
+## Lifecycle hooks
+
+Claude Code runs `hooks/claude-hooks.json`. Each handler calls `hooks/ditto-hook.sh`
+with a 5-second timeout and fails open. The script prints fixed reminders and
+makes no network calls; Ditto reads and writes still go through the agent's MCP
+connection.
+
+- **Silent until Ditto works:** nothing is added until a Ditto memory tool has
+  succeeded once in this installation (a `PostToolUse` hook matched only to
+  Ditto's memory tools records that).
+- **Session start:** search Ditto with `ditto-memory` before work that depends on
+  the user's history, people, projects or past decisions.
+- **Compaction:** the summary keeps Ditto memory IDs and marks outcomes not yet
+  saved. After compaction the agent reuses those IDs and saves what is still
+  unsaved, if capture is authorized.
+- **Stop:** once per interactive session and at most once a day, after a file edit or
+  ten tool calls with no Ditto save, the agent saves one concise outcome note if you
+  authorized capture, and otherwise offers to. This costs one short extra turn. Headless runs
+  (`claude -p`, the Agent SDK) skip it unless `DITTO_HOOKS_STOP=1`.
+
+`DITTO_HOOKS=0` turns them all off; `DITTO_HOOKS_STOP=0` turns off only the Stop
+check. Other hosts get no hooks yet. See
+[docs/hooks.md](../../docs/hooks.md) for the rationale and each host's support.
+
 ## Other services and host capabilities
 
 The Ditto MCP server supplies memory access. Skills may also use separately
@@ -90,11 +115,12 @@ runners, disk checks and deploy probes, sit in a skill's
 
 The plugin respects your current instructions, private capture preferences,
 source authorship and actual tool grants. The plugin does not automatically save
-transcripts or inject context at every prompt. Native chat listing/sending and
+transcripts or inject context at every prompt; its hooks only remind the agent. Native chat listing/sending and
 music-account access are not supplied by this package. UI support depends on the
 actual host. Installation alone does not prove authenticated tool execution.
 
-Upgrading from 0.2.x removes the old plugin's CLI hooks and commands. Previously
+Upgrading from 0.2.x removes the old plugin's CLI hooks and commands; today's
+hooks are local reminders with no CLI. Previously
 installed CLI software, credentials, agent accounts and saved memories remain;
 manage those separately if no longer needed. Reload or restart running sessions
 to pick up the new plugin components.

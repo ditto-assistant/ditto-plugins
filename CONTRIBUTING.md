@@ -32,7 +32,10 @@ host. Every root marketplace lists the same plugins, and
      `extensions["com.openai"]` listing and review cases.
 3. **Allow its endpoint.** Add `<name>: <https MCP URL>` to `HOSTED_MCP` in
    `scripts/validate_package.py`. Only hosted HTTP servers are allowed: no
-   commands, headers, env or credentials.
+   commands, headers, env or credentials. A new plugin starts without hooks;
+   delete the copied `hooks/` folder and the `hooks` field in
+   `.claude-plugin/plugin.json`. Hook files must be pinned in
+   `scripts/hook-allowlist.json` (see [docs/hooks.md](docs/hooks.md)).
 4. **List it in every root marketplace**: `.claude-plugin`, `.cursor-plugin`,
    `.grok-plugin`, `.agents/plugins` and `.github/plugin`. Use the source
    `./plugins/<name>`, and set category and description in each host's own vocabulary.
