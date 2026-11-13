@@ -248,7 +248,8 @@ class HookScriptTests(unittest.TestCase):
 
     def test_connected_lapses_after_30_days_without_a_ditto_call(self):
         self.worked()
-        # find rounds ages down to whole days: +29 matches from exactly 30 days on.
+        # Just past and just short of 30 days; the script counts minutes, so GNU and
+        # BSD find agree on both sides.
         self.age("connected", days=30.01)
         self.assertEqual(self.run_hook("session-start"), "")
         self.assertFalse((self.data / "connected").exists())
@@ -361,6 +362,16 @@ class HookScriptTests(unittest.TestCase):
         for label, kwargs in cases.items():
             with self.subTest(label):
                 self.assertEqual(self.run_hook("bogus" if label == "unknown event" else "stop", **kwargs), "")
+
+    def test_ages_are_counted_in_minutes(self):
+        # Day-granular -mtime rounds differently on GNU (down) and BSD (documented as up).
+        self.assertNotIn("-mtime", SCRIPT.read_text())
+        self.worked()
+        self.asked(self.run_hook("stop", {"session_id": "first"}), age=False)
+        self.age("stop-check-*", days=0.99)
+        self.assertEqual(self.run_hook("stop", {"session_id": "under-a-day"}), "")
+        self.age("stop-check-*", days=1.01)
+        self.asked(self.run_hook("stop", {"session_id": "over-a-day"}))
 
     def test_marker_is_written_after_the_reminder(self):
         script = SCRIPT.read_text()

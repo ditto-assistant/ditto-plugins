@@ -35,7 +35,8 @@ if [ "$event" = connected ]; then
   mkdir -p "$data" 2>/dev/null && touch "$data/connected" 2>/dev/null
   exit 0
 fi
-find "$data" -maxdepth 1 -name connected -mtime +29 -exec rm -f {} + 2>/dev/null
+# Ages in minutes: find rounds whole-day ages differently on GNU and BSD.
+find "$data" -maxdepth 1 -name connected -mmin +43199 -exec rm -f {} + 2>/dev/null
 [ -e "$data/connected" ] || exit 0
 
 field() {
@@ -84,7 +85,7 @@ stop)
   [ -e "$marker" ] && exit 0
   # At most one check a day per install, so a user who declines is not asked in
   # every session.
-  [ -n "$(find "$data" -maxdepth 1 -name 'stop-check-*' -mtime -1 2>/dev/null | head -n 1)" ] && exit 0
+  [ -n "$(find "$data" -maxdepth 1 -name 'stop-check-*' -mmin -1440 2>/dev/null | head -n 1)" ] && exit 0
   # Already saved or updated a Ditto memory this session: nothing to remind.
   calls '[^"]*(save_memory|update_memory)' | grep -q . && exit 0
   # Real work means a file edit, or at least ten tool calls.
@@ -95,7 +96,7 @@ stop)
   # Write the marker after the reminder, so an interrupted run cannot suppress one
   # that was never shown; an unwritable data dir would repeat it, so check first.
   [ -w "$data" ] || exit 0
-  find "$data" -maxdepth 1 -name 'stop-check-*' -mtime +30 -exec rm -f {} + 2>/dev/null
+  find "$data" -maxdepth 1 -name 'stop-check-*' -mmin +43199 -exec rm -f {} + 2>/dev/null
   cat <<'EOF'
 {"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":"Ditto end-of-task check (once per session). If this session produced durable outcomes the user would want remembered (decisions, results, owners, next steps) and the user has authorized Ditto capture, save one concise note through the ditto-memory skill: search for an existing record first, no transcript, no credentials, and confirm the save. If capture has not been authorized and the user has not already declined it, offer it in one sentence. If nothing durable happened or the Ditto server is not connected, end the turn with one short line saying so."}}
 EOF
